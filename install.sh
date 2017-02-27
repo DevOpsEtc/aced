@@ -102,7 +102,7 @@ aed_uninstall() {
     unset -f $rmFunc
 
     echo -e "\n$green \bRemoving AED variables..."
-    unset
+    unset 
 
 
     echo -e "\n$green \bRemoving AED directories and file..."

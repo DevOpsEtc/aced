@@ -49,23 +49,26 @@ aed() {
     # aed_osAppAll
   fi
 
-  option=$1                        # store passed AED argument
-  option=${option/-/}              # strip any hypen
-  case $option in                  # AED option conditionals
-    ip|eip      ) aed_eip       ;; # obtain|associate|dissociate Elastic IP
+  # store passed AED argument
+  option=$1
+
+  # strip any included hypen
+  option=${option/-/}
+
+  # AED parameter conditionals
+  case $option in
+    ip|eip      ) aed_eip       ;; # Elastic IP task
     on|start    ) aed_start     ;; # start EC2 instance
     off|stop    ) aed_stop      ;; # stop EC2 instance
     r|rule      ) aed_secRule   ;; # add|remove temporary remote access rule
     rb|reboot   ) aed_reboot    ;; # reboot EC2 instance
-    rs|reset    ) aed_reset     ;; # delete AED env vars; invoke install
     sg|sec      ) aed_secAll    ;; # import|add|delete EC2 keys/groups/rules
-    ssh|connect ) ssh aws       ;; # connnect to remote EC2 server cli
+    ssh|connect ) ssh aws       ;; # connnect to remote EC2 server cli via alias
     st|status   ) aed_status    ;; # list EC2 instance status
     t|terminate ) aed_terminate ;; # delete EC2 instance
     u|uninstall ) aed_uninstall ;; # AED uninstall
-    v|version   ) aed_version   ;; # AED version number/date
-    \?|h|help   ) aed_help      ;; # AED help
-    # *           ) aed_Ec2Menu   ;; # EC2 Tasks Menu; $ aed or $ aed [unknown]
+    v|version   ) aed_version   ;; # AED version number & date
+    *           ) aed_help      ;; # AED help; unknown or no argument wildcard;
   esac
 }
 
