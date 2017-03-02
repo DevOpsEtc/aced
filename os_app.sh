@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 
 ####################################################
-##  filename: app.sh														 	##
-##  path:     ~/src/deploy/cloud/aws/						  ##
-##  purpose:  install and config apps             ##
-##  date:     03/02/2017													##
+##  filename:   app.sh                            ##
+##  path:       ~/src/deploy/cloud/aws/           ##
+##  purpose:    install and config apps           ##
+##  date:       03/02/2017                        ##
 ##  repo:       https://github.com/DevOpsEtc/aed  ##
 ##  clone path: ~/aed/app/                        ##
 ####################################################

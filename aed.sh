@@ -1,23 +1,23 @@
 #!/usr/bin/env bash
 
-##############################################################
-##  filename:     aed.sh                                    ##
-##  path:         ~/src/deploy/cloud/aws/                   ##
-##  purpose:      run AED: Automated EC2 Deploy             ##
-##  date:         03/02/2017                                ##
-##  symlink:      $ ln -s ~/src/deploy/cloud/aws ~/aed/app  ##
-##  repo:         https://github.com/DevOpsEtc/aed          ##
-##  clone path:   ~/aed/app/                                ##
-##  source:       $ . ~/aed/app/aed.sh                      ##
-##  run:          $ aed                                     ##
-##  options:      -ip -on -off -reboot -rule -sec -status   ##
-##  options:      -terminate -uninstall -ver                ##
-##############################################################
+############################################################
+##  filename:   aed.sh                                    ##
+##  path:       ~/src/deploy/cloud/aws/                   ##
+##  purpose:    run AED: Automated EC2 Deploy             ##
+##  date:       03/02/2017                                ##
+##  symlink:    $ ln -s ~/src/deploy/cloud/aws ~/aed/app  ##
+##  repo:       https://github.com/DevOpsEtc/aed          ##
+##  clone path: ~/aed/app/                                ##
+##  source:     $ . ~/aed/app/aed.sh                      ##
+##  run:        $ aed                                     ##
+##  options:    -ip -on -off -reboot -rule -sec -status   ##
+##  options:    -terminate -uninstall -ver                ##
+############################################################
 
 aed_version() {
-  ############################################################
-  ####  Display logo/version info in pre-rendered figlet  ####
-  ############################################################
+  ##########################################################
+  ####  Display logo/version pre-rendered figlet  ##########
+  ##########################################################
 
   echo -e "\n$aed_blu
         _    _____ ____
@@ -34,9 +34,9 @@ aed_version() {
 }
 
 aed_help() {
-  ############################################################
-  ####  Display AED help & tips  #############################
-  ############################################################
+  ##########################################################
+  ####  Display AED help & tips  ###########################
+  ##########################################################
 
   echo -e "\n$aed_ylw
     AED Commands: \n
@@ -57,9 +57,9 @@ aed_help() {
 }
 
 aed_tasks() {
-  ############################################################
-  ####  Display AWS IAM & EC2 task menu  #####################
-  ############################################################
+  ##########################################################
+  ####  Display AWS IAM & EC2 task menu  ###################
+  ##########################################################
 
   echo "AWS IAM/EC2 Tasks: launch|describe|terminate|start|stop|reboot|show IP"
 }

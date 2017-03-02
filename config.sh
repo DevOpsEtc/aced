@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 
-######################################################
-##  filename:     config.sh                         ##
-##  path:         ~/src/deploy/cloud/aws/           ##
-##  purpose:      default AED settings              ##
-##  date:         03/01/2017                        ##
-##  repo:         https://github.com/DevOpsEtc/aed  ##
-##  clone path:   ~/aed/app/                        ##
-######################################################
+####################################################
+##  filename:   config.sh                         ##
+##  path:       ~/src/deploy/cloud/aws/           ##
+##  purpose:    default AED settings              ##
+##  date:       03/02/2017                        ##
+##  repo:       https://github.com/DevOpsEtc/aed  ##
+##  clone path: ~/aed/app/                        ##
+####################################################
 
 # assign default values
 aed_ver="1.0.0"                        # AED release version

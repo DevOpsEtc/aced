@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 
-######################################################
-##  filename:     iam.sh												    ##
-##  path:         ~/src/deploy/cloud/aws/						##
-##  purpose:      IAM group, policy, user           ##
-##  date:         03/01/2017												##
-##  repo:         https://github.com/DevOpsEtc/aed	##
-##  clone path:   ~/aed/app/                        ##
-######################################################
+####################################################
+##  filename:   iam.sh                            ##
+##  path:       ~/src/deploy/cloud/aws/           ##
+##  purpose:    IAM group, policy, user           ##
+##  date:       03/02/2017                        ##
+##  repo:       https://github.com/DevOpsEtc/aed  ##
+##  clone path: ~/aed/app/                        ##
+####################################################
 
 # invoke all functions in script
 aed_iam() {

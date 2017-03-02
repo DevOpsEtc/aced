@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 
 ####################################################
-##  filename: os_sec.sh													  ##
-##  path:     ~/src/deploy/cloud/aws/						  ##
-##  purpose:  Server Security Hardening					  ##
-##  date:     03/02/2017												  ##
+##  filename:   os_sec.sh                         ##
+##  path:       ~/src/deploy/cloud/aws/           ##
+##  purpose:    Server Security Hardening         ##
+##  date:       03/02/2017                        ##
 ##  repo:       https://github.com/DevOpsEtc/aed  ##
 ##  clone path: ~/aed/app/                        ##
 ####################################################
