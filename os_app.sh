@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 
-#####################################################
-##  filename: app.sh														 	 ##
-##  path:     ~/src/deploy/cloud/aws/						   ##
-##  purpose:  install and config apps              ##
-##  date:     02/16/2017													 ##
-##  repo:     https://github.com/DevOpsEtc/deploy	 ##
-##	source:		$ . ~/src/deploy/cloud/aws/app.sh    ##
-#####################################################
+####################################################
+##  filename: app.sh														 	##
+##  path:     ~/src/deploy/cloud/aws/						  ##
+##  purpose:  install and config apps             ##
+##  date:     03/02/2017													##
+##  repo:       https://github.com/DevOpsEtc/aed  ##
+##  clone path: ~/aed/app/                        ##
+####################################################
 
 ##################################################################
 #### install apps  ###############################################

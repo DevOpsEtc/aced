@@ -1,29 +1,30 @@
 #!/usr/bin/env bash
 
-#################################################################
-##  filename:     aed.sh													 	           ##
-##  path:         ~/src/deploy/cloud/aws/						           ##
-##  purpose:      run AED: Automated EC2 Deploy                ##
-##  date:         02/26/2017											             ##
-##  symlink:      $ ln -s ~/src/deploy/cloud/aws ~/aed/app     ##
-##  repo:         https://github.com/DevOpsEtc/aed	           ##
-##  clone path:   ~/aed/app/                                   ##
-##	source:		    $ . ~/aed/app/aed.sh                         ##
-##	run:		      $ aed                                        ##
-##  options:      -help -ip -on -off -reboot -reset -rule      ##
-##  options:      -sec -status -terminate -uninstall -version  ##
-#################################################################
+##############################################################
+##  filename:     aed.sh													 	        ##
+##  path:         ~/src/deploy/cloud/aws/						        ##
+##  purpose:      run AED: Automated EC2 Deploy             ##
+##  date:         03/01/2017											          ##
+##  symlink:      $ ln -s ~/src/deploy/cloud/aws ~/aed/app  ##
+##  repo:         https://github.com/DevOpsEtc/aed	        ##
+##  clone path:   ~/aed/app/                                ##
+##	source:		    $ . ~/aed/app/aed.sh                      ##
+##	run:		      $ aed                                     ##
+##  options:      -ip -on -off -reboot -rule -sec -status   ##
+##  options:      -terminate -uninstall -ver                ##
+##############################################################
 
-aed() {
+aed_task_menu() {
+  echo "AWS IAM/EC2 Tasks: launch|describe|terminate|start|stop|reboot|show IP"
+}
+
+aed_main() {
   ###############################################################
   ####  main AED function: install & run  #######################
   ###############################################################
 
-  # assign AED path
-  AED_APP=~/aed/app
-
   # AED sourced scripts array
-  scriptList=(
+  aed_scripts=(
     config.sh      # AED config
     install.sh     # AED install/uninstall
     iam.sh         # AWS IAM security tasks
@@ -35,62 +36,66 @@ aed() {
   )
 
   # loop through script list; source each script
-  for i in "${scriptList[@]}"; do
-    . $AED_APP/$i
+  for i in "${aed_scripts[@]}"; do
+    . ~/aed/app/$i
   done
 
   # check AED install status; invoke functions for install related tasks
-  if [ "$AED_INSTALLED" != true ]; then
-    aed_install
-    aed_iamAll
-    aed_ec2SecAll
-    # aed_ec2All
-    # aed_osSecAll
-    # aed_osAppAll
+  if [ "$aed_installed" != true ]; then
+    aed_install    # invoke function for AED install
+    aed_iam        # invoke function for AWS IAM tasks
+    aed_ec2_sec    # invoke function for AWS EC2 security tasks
+    # aed_os_sec     # invoke function for Ubuntu server hardening tasks
+    # aed_os_app     # invoke function for Ubuntu server app tasks
+  else
+    aed_task_menu  # invoke IAM/EC2 task menu
   fi
 
   # store passed AED argument
-  option=$1
+  aed_option=$1
 
   # strip any included hypen
-  option=${option/-/}
+  aed_option=${aed_option/-/}
 
   # AED parameter conditionals
-  case $option in
-    ip|eip      ) aed_eip       ;; # Elastic IP task
-    on|start    ) aed_start     ;; # start EC2 instance
-    off|stop    ) aed_stop      ;; # stop EC2 instance
-    r|rule      ) aed_secRule   ;; # add|remove temporary remote access rule
-    rb|reboot   ) aed_reboot    ;; # reboot EC2 instance
-    sg|sec      ) aed_secAll    ;; # import|add|delete EC2 keys/groups/rules
-    ssh|connect ) ssh aws       ;; # connnect to remote EC2 server cli via alias
-    st|status   ) aed_status    ;; # list EC2 instance status
-    t|terminate ) aed_terminate ;; # delete EC2 instance
-    u|uninstall ) aed_uninstall ;; # AED uninstall
-    v|version   ) aed_version   ;; # AED version number & date
-    *           ) aed_help      ;; # AED help; unknown or no argument wildcard;
+  case $aed_option in
+    c|connect     ) ssh aws       ;; # EC2 remote access connect
+    ip            ) aed_eip       ;; # EC2 rotate public IP
+    on|start      ) aed_start     ;; # EC2 instance start
+    off|stop      ) aed_stop      ;; # EC2 instance stop
+    r|rule        ) aed_ec2_rule  ;; # EC2 remote access ingress rules
+    rb|reboot     ) aed_reboot    ;; # EC2 instance reboot
+    s|status      ) aed_status    ;; # EC2 instance status
+    sec|security  ) aed_ec2_sec   ;; # EC2 keys, group, & rule tasks
+    t|terminate   ) aed_terminate ;; # EC2 instance deletion
+    u|uninstall   ) aed_uninstall ;; # AED uninstall
+    v|ver|version ) aed_version   ;; # AED version information
+    \?|h\help     ) aed_help      ;; # AED help
+    *             ) aed_menu      ;; # IAM/EC2 task menu; unknown arguments
   esac
 }
 
-# check installed status; source AED install scripts
-# if [ "$AED_INSTALLED" != true ]; then
-  # . $AED_APP/install.sh   # AED install script
-  # . $AED_APP/iam.sh       # AWS IAM group/policy/user setup script
+aed_main "$@"
 
-  # echo -e "$green
+# check installed status; source AED install scripts
+# if [ "$aed_installed" != true ]; then
+  # . $aed_app/install.sh   # AED install script
+  # . $aed_app/iam.sh       # AWS IAM group/policy/user setup script
+
+  # echo -e "$aed_grn
   # XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
   # XXXXXXXX  AED Install:  XXXXXXXX
   # XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 
-  # bash $AED_APP/os_sec.sh   # run server security hardening script
-  # bash $AED_APP/os_app.sh   # run app install/config script
+  # bash $aed_app/os_sec.sh   # run server security hardening script
+  # bash $aed_app/os_app.sh   # run app install/config script
 
   # update AED config value
-  # sed -i '' 's/AED_INSTALLED=false/AED_INSTALLED=true/' $AED_ROOT/config.sh
+  # sed -i '' 's/aed_installed=false/aed_installed=true/' $AED_ROOT/config.sh
 
   # source AED to pickup value change
-  # . $AED_APP/aed.sh
-  # echo -e "\n$blue \bAED Installed! \nEnter $ aed -h to see options $rs"
+  # . $aed_app/aed.sh
+  # echo -e "\n$aed_blu \bAED Installed! \nEnter $ aed -h to see options $aed_rst"
 # fi
 
 # ingest any arguments

@@ -54,74 +54,55 @@ Designed for lazy people by a lazy person. Don't build your web server by hand a
   2. source AED app <br>
   `$ . ~/aed/app/aed.sh`
 
-  3. permanently source AED app for new shells <br>
-  # append to bash_profile or bashrc
-
-  # OPTIONAL
-
-  # create a new local git repo to store blog posts (markdown files)
-
-  # add a git remote
-  $ git remote add origin [domainName.com/path/to/repo]
-
-  # verify new remote URL
-  $ git remote -v               
-
-  # push changes in local repo up to new remote repo; -u sets upstream, to
-  # omit remote & branch names when running git pull/push
-  $ git push -u origin master
-  ```
-
 **Getting Started:** <br>
 
-AED Command Options:
+AED Commands:
 ```
-$ aed -ip or -eip         # allocate|associate|release Elastic IP
-$ aed -on or -start       # start EC2 instance
-$ aed -off or -stop       # stop EC2 instance
-$ aed -r or -rule         # add|remove temporary remote access rule
-$ aed -rb or -reboot      # reboot EC2 instance
-$ aed -rs or -reset       # delete AED env vars; invoke install
-$ aed -sg or -sec         # import|add|delete EC2 keys/groups/rules
-$ aed -ssh or -connect    # connect to remote EC2 server cli
-$ aed -st or -status      # list EC2 instance status
-$ aed -t or -terminate    # delete EC2 instance
-$ aed -u or -uninstall    # AED uninstall
-$ aed -v or -version      # AED release version information
-$ aed -? or -h or -help   # AED command options listing
+$ aed                    # IAM/EC2 task menu
+$ aed -c or -connect     # EC2 remote access connect
+$ aed -ip                # EC2 rotate public IP
+$ aed -on or -start      # EC2 instance start
+$ aed -off or -stop      # EC2 instance stop
+$ aed -r or -rule        # EC2 remote access ingress rules
+$ aed -rb or -reboot     # EC2 instance reboot
+$ aed -s or -status      # EC2 instance status
+$ aed -sec or -security  # EC2 keys, group, & rule tasks
+$ aed -t or -terminate   # EC2 instance deletion
+$ aed -u or -uninstall   # AED uninstall
+$ aed -v or -version     # AED version information
+$ aed -? or -h or -help  # AED help
 ```
 
-**Optional:**
-  ```
-  # append to $PATH to allow running by filename only
-  $ export PATH="$deployPath:$PATH"
+**Remote Access:** <br>
+AED generates an EC2 ingress rule which restricts remote access to SSH connections originating from the public IP address in use during install. You can easily create/revoke new ingress rules for access from anywhere by running:
 
-  # remove repo directory:
-  $ rm -rf $deployPath/.git
+`$ aed -rule.`
 
-  # make permanent by adding to end of existing .bash_profile:
-  $ echo "export PATH="$deployPath:$PATH"" >> .bash_profile
+**Git Repository:** <br>
+AED generated a remote git repo, which you can connect to push blog posts to Ghost. To get started, you need to create a new local git repo.
 
-  # create bash alias:
-  $ echo "alias color='$deployPath/term_colors.sh'" >> .bash_profile
-  ```
+```
+# remove repo directory:
+$ rm -rf $deployPath/.git
+
+# create a new local git repo to store blog posts (markdown files)
+
+# add a git remote
+$ git remote add origin [domainName.com/path/to/repo]
+
+# verify new remote URL
+$ git remote -v               
+
+# push changes in local repo up to new remote repo; -u sets upstream, to
+# omit remote & branch names when running git pull/push
+$ git push -u origin master
+```
 
 **Notes:** <br>
 - Scripts were coded for Mac OSX, but will work with Linux with minor mods to command flags
 - Windows could work if bash and other commands are installed and file paths are adjusted accordingly
 - Scripts written against aws-cli version 1.11.48 commands
 - Extend AED with other aws-cli scripts; see the examples folder after installation:
-
-```
-# store path to aws examples
-$ awsExamples=/usr/local/share/awscli/examples
-
-# change directory & list contents
-$ cd $awsExamples/ec2 && ls
-
-# display example content
-$ cat revoke-security-group-ingress.rst
-```
 
 **Roadmap:**
 
@@ -134,5 +115,6 @@ $ cat revoke-security-group-ingress.rst
       - PostFix
       - DoveCot
       - SpamAssin
+- Refactor using python: https://aws.amazon.com/sdk-for-python/
 
 **PRs welcome, or fork it (YMMV!)**
