@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 
-############################################################################
-##  filename:     install.sh												                      ##
-##  path:         ~/src/deploy/cloud/aws/						                      ##
-##  purpose:      check prerequisites, create file structure, set config  ##
-##  date:         03/01/2017												                      ##
-##  repo:         https://github.com/DevOpsEtc/aed	                      ##
-##  clone path:   ~/aed/app/                                              ##
-############################################################################
+#################################################################
+##  filename:   install.sh                                     ##
+##  path:       ~/src/deploy/cloud/aws/                        ##
+##  purpose:    create file structure & confirm prerequisites  ##
+##  date:       03/02/2017                                     ##
+##  repo:       https://github.com/DevOpsEtc/aed               ##
+##  clone path: ~/aed/app/                                     ##
+#################################################################
 
 aed_install() {
   clear
@@ -59,7 +59,7 @@ aed_install() {
   if [[ "$aed_opt" =~ ^([nN][oO]|[nN])+$ ]]; then
     # script check; grab if not found
     if [ ! -f $aed_bin/key_pair.sh ]; then
-      cd $aed_bin
+      cd $aed_bin || exit
       curl -sO \
       https://raw.githubusercontent.com/DevOpsEtc/bin/master/key_pair.sh
     fi
@@ -82,7 +82,6 @@ aed_uninstall() {
 
   # check for response
   if [[ "$aed_opt" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
-
     echo -e "\n$aed_grn \bRemoving AED shell functions..."
     # store functions names to delete (aed & aed_*)
     aed_rmFun=$(declare -F | awk '/\ aed_/ {print $3}')
@@ -97,18 +96,21 @@ aed_uninstall() {
     rm -rf $aed_app
 
     echo $aed_ylw; read -r -p "Remove AED bin directory? [Y/N] " aed_opt
+
     if [[ "$aed_opt" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
       echo -e "\n$aed_grn \bRemoving AED bin directory..."
       rm -rf $aed_bin
     fi
 
     echo $aed_ylw; read -r -p "Remove AED config directory? [Y/N] " aed_opt
+
     if [[ "$aed_opt" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
       echo -e "\n$aed_grn \bRemoving AED config directory..."
       rm -rf $aed_config
     fi
 
     echo $aed_ylw; read -r -p "Remove AED data directory & repo? [Y/N] " aed_opt
+
     if [[ "$aed_opt" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
       echo -e "\n$aed_grn \bRemoving AED data directory..."
       rm -rf $aed_data
@@ -127,4 +129,5 @@ aed_uninstall() {
     # invoke function to display logo & version
     aed_version
     echo -e "\n$aed_blu \bThanks for trying AED!"
+  fi
 }
