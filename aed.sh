@@ -56,7 +56,7 @@ aed_help() {
   "
 }
 
-aed_menu() {
+aed_tasks() {
   ############################################################
   ####  Display AWS IAM & EC2 task menu  #####################
   ############################################################
@@ -87,7 +87,7 @@ aed_main() {
   done
 
   # check AED install status; invoke AED install related functions
-  if [ ! "$aed_installed" ]; then
+  if [ "$aed_installed" == false ]; then
     aed_install    # invoke function for AED install
     aed_iam        # invoke function for AWS IAM tasks
     aed_ec2_sec    # invoke function for AWS EC2 security tasks
@@ -95,8 +95,6 @@ aed_main() {
     # aed_os_app     # invoke function for Ubuntu server app tasks
     sed -i '' '/aed_installed=/ s/false/true /' $aed_app/config.sh
     echo -e "\n$aed_blu \bAED Installed! \nEnter $ aed or $ aed -h"
-  else
-    aed_task_menu  # invoke IAM/EC2 task menu
   fi
 
   # strip off any prefixed hypen from passed argument
