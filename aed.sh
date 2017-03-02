@@ -31,7 +31,7 @@ aed_version() {
     Released: 03/01/2017
     Author:   DevOpsEtc
   "
-}
+} # end function: aed_version
 
 aed_help() {
   ##########################################################
@@ -40,29 +40,104 @@ aed_help() {
 
   echo -e "\n$aed_ylw
     AED Commands: \n
-    $ aed                    # IAM/EC2 task menu
-    $ aed -c or -connect     # EC2 remote access connect
-    $ aed -ip                # EC2 rotate public IP
-    $ aed -on or -start      # EC2 instance start
-    $ aed -off or -stop      # EC2 instance stop
-    $ aed -r or -rule        # EC2 remote access ingress rules
-    $ aed -rb or -reboot     # EC2 instance reboot
-    $ aed -s or -status      # EC2 instance status
-    $ aed -sec or -security  # EC2 keys, group, & rule tasks
-    $ aed -t or -terminate   # EC2 instance deletion
-    $ aed -u or -uninstall   # AED uninstall
-    $ aed -v or -version     # AED version information
-    $ aed -? or -h or -help  # AED help
+    $ aed                    # AED: task menu
+    $ aed -c or -connect     # EC2: remote access connect
+    $ aed -ip                # EIP: rotate public IP
+    $ aed -on or -start      # EC2: instance start
+    $ aed -off or -stop      # EC2: instance stop
+    $ aed -r or -rule        # EC2: remote access ingress rules
+    $ aed -rb or -reboot     # EC2: instance reboot
+    $ aed -s or -status      # EC2: instance status
+    $ aed -sec or -security  # EC2: keys, group, & rule tasks
+    $ aed -u or -uninstall   # AED: uninstall
+    $ aed -v or -version     # AED: version information
+    $ aed -? or -h or -help  # AED: help
   "
-}
+} # end function: aed_help
+
+aed_ec2_dashboard() {
+  # add call to spinner function
+  # does instance exist
+    # is it running
+    # see logs: auth/ssh/web/etc
+    # list processes
+    # is website up
+      # curl
+  aed_status_ec2() {
+    :
+  }
+  aed_status_server() {
+    :
+  }
+  aed_status_webserver() {
+    :
+  }
+  aed_status_www() {
+    :
+  }
+
+} # end function: aed_ec2_dashboard
 
 aed_tasks() {
   ##########################################################
   ####  Display AWS IAM & EC2 task menu  ###################
   ##########################################################
+  clear
+  aed_ec2_dashboard   # invoke function to display server status
+  COLUMNS=20          # force select menu to display vertically
 
-  echo "AWS IAM/EC2 Tasks: launch|describe|terminate|start|stop|reboot|show IP"
-}
+  # populate array with menu options
+  aed_task_option=(
+    "IAM: Rotate Access Keys"
+    "EIP: Rotate IP Address"
+    "EC2: Add Remote Access Rule"
+    "EC2: See Instance Status"
+    "EC2: Describe Instance"
+    "EC2: Start Instance"
+    "EC2: Stop Instance"
+    "EC2: Reboot Instance"
+    "EC2: Launch Instance"
+    "EC2: Terminate Instance"
+    "QUIT"
+  ) # end function: aed_tasks
+
+  # loop menu until explicity quit
+  while true; do
+    echo -e "\n$aed_grn \bAED AWS Tasks: \n_________________________________\n"
+    PS3=$'\nChoose task: '
+
+    select t in "${aed_task_option[@]}"; do
+      case $t in
+        "IAM: Rotate Access Keys")
+          break ;;
+        "EIP: Rotate IP Address")
+          break ;;
+        "EC2: Add Remote Access Rule")
+          break ;;
+        "EC2: See Instance Status")
+          break ;;
+        "EC2: Describe Instance")
+          break ;;
+        "EC2: Start Instance")
+          break ;;
+        "EC2: Stop Instance")
+          break ;;
+        "EC2: Reboot Instance")
+          break ;;
+        "EC2: Launch Instance")
+          break ;;
+        "EC2: Terminate Instance")
+          break ;;
+        "QUIT")
+          return ;;
+        *)
+          echo -e "$aed_ylw \nMust Enter Number: 1-${#aed_task_option[@]} \
+            $aed_grn\n"
+          break ;;
+      esac
+    done # end select menu
+  done # end of menu loop
+} # end function: aed_tasks
 
 aed_main() {
   ############################################################
@@ -102,21 +177,20 @@ aed_main() {
 
   # AED parameter conditionals
   case $aed_option in
-    c|connect     ) ssh aws       ;; # EC2 remote access connect
-    ip            ) aed_eip       ;; # EC2 rotate public IP
-    on|start      ) aed_start     ;; # EC2 instance start
-    off|stop      ) aed_stop      ;; # EC2 instance stop
-    r|rule        ) aed_ec2_rule  ;; # EC2 remote access ingress rules
-    rb|reboot     ) aed_reboot    ;; # EC2 instance reboot
-    s|status      ) aed_status    ;; # EC2 instance status
-    sec|security  ) aed_ec2_sec   ;; # EC2 keys, group, & rule tasks
-    t|terminate   ) aed_terminate ;; # EC2 instance deletion
-    u|uninstall   ) aed_uninstall ;; # AED uninstall
-    v|ver|version ) aed_version   ;; # AED version information
-    \?|h\help     ) aed_help      ;; # AED help
-    *             ) aed_tasks     ;; # IAM/EC2 task menu; unknown arguments
+    c|connect     ) ssh aed        ;; # EC2 remote access connect
+    ip            ) aed_eip        ;; # EC2 rotate public IP
+    on|start      ) aed_ec2_start  ;; # EC2 instance start
+    off|stop      ) aed_ec2_stop   ;; # EC2 instance stop
+    r|rule        ) aed_ec2_rule   ;; # EC2 remote access ingress rules
+    rb|reboot     ) aed_ec2_reboot ;; # EC2 instance reboot
+    s|status      ) aed_ec2_status ;; # EC2 instance status
+    sec|security  ) aed_ec2_sec    ;; # EC2 keys, group, & rule tasks
+    u|uninstall   ) aed_uninstall  ;; # AED uninstall
+    v|ver|version ) aed_version    ;; # AED version information
+    \?|h\help     ) aed_help       ;; # AED help
+    *             ) aed_tasks      ;; # AED task menu; unknown arguments
   esac
-}
+} # end function: aed_main
 
 # invoke main AED function & ingest any arguments as written
 aed_main "$@"

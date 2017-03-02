@@ -34,4 +34,5 @@ aed_blu=$(tput bold && tput setaf 33)  # bold blue
 aed_ylw=$(tput bold && tput setaf 136) # bold yellow
 aed_grn=$(tput bold && tput setaf 64)  # bold green
 aed_red=$(tput bold && tput setaf 160) # bold red
+aed_wht=$(tput bold && tput setaf 7)   # bold white
 aed_rst=$(tput sgr0)                   # reset attributes

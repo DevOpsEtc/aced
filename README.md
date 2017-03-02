@@ -58,19 +58,18 @@ Designed for lazy people by a lazy person. Don't build your web server by hand a
 
 AED Commands:
 ```
-$ aed                    # IAM/EC2 task menu
-$ aed -c or -connect     # EC2 remote access connect
-$ aed -ip                # EC2 rotate public IP
-$ aed -on or -start      # EC2 instance start
-$ aed -off or -stop      # EC2 instance stop
-$ aed -r or -rule        # EC2 remote access ingress rules
-$ aed -rb or -reboot     # EC2 instance reboot
-$ aed -s or -status      # EC2 instance status
-$ aed -sec or -security  # EC2 keys, group, & rule tasks
-$ aed -t or -terminate   # EC2 instance deletion
-$ aed -u or -uninstall   # AED uninstall
-$ aed -v or -version     # AED version information
-$ aed -? or -h or -help  # AED help
+$ aed                    # AED: task menu
+$ aed -c or -connect     # EC2: remote access connect
+$ aed -ip                # EIP: rotate public IP
+$ aed -on or -start      # EC2: instance start
+$ aed -off or -stop      # EC2: instance stop
+$ aed -r or -rule        # EC2: remote access ingress rules
+$ aed -rb or -reboot     # EC2: instance reboot
+$ aed -s or -status      # EC2: instance status
+$ aed -sec or -security  # EC2: keys, group, & rule tasks
+$ aed -u or -uninstall   # AED: uninstall
+$ aed -v or -version     # AED: version information
+$ aed -? or -h or -help  # AED: help
 ```
 
 **Remote Access:** <br>
