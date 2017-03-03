@@ -11,26 +11,32 @@
 
 # invoke all functions in this script
 aed_ec2_sec() {
-  aed_ec2_sec_keypair
-  aed_ec2_sec_group
-  aed_ec2_sec_rules
+  echo done!
+  # aed_ec2_sec_keypair
+  # aed_ec2_sec_group
+  # aed_ec2_sec_rules
 }
 
 aed_ec2_sec_keypair() {
-  echo -e "$aed_grn
-  \b\b##############################################
-  \b\b##  EC2 Key Pairs  ###########################
-  \b\b##############################################"
+  echo -e "$aed_wht
+  \b\b######################################################
+  \b\b##  Check Existing EC2 Key Pairs  ####################
+  \b\b######################################################"
+
+  # populate array with key-pair names
+  aed_get_key_pair=($(aws ec2 describe-key-pairs \
+    --query Groups[*].GroupName \
+    --output text)
+  )
 
   echo -e "\n$aed_grn \bChecking for existing EC2 key pair... $aed_rst"
-  if $(aws ec2 describe-key-pairs | grep -q KeyName); then
-
+  if [ $(aws ec2 describe-key-pairs | grep -q KeyName) ]; then
     echo -e "\n$aed_blu \bEC2 key pair found: \n $aed_rst"
     aws ec2 describe-key-pairs --output table
 
     # prompt to remove
     echo -e "$aed_ylw"
-    read -r -p "Delete key pair? [Y/N] " aed_opt
+    read -rp "Delete key pair? [Y/N] " aed_opt
 
     # check for response
     if [[ "$aed_opt" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
@@ -48,18 +54,18 @@ aed_ec2_sec_keypair() {
   # check for key pair; do while not found
   while ! $(aws ec2 describe-key-pairs | grep -q KeyName); do
     echo -e "$aed_grn\n \bNo key pair found! Let's import one now. \n$aed_ylw"
-    read -r -p "Public key path set to: $aed_keys, Keep It? [Y/N] " aed_opt
+    read -rp "Public key path set to: $aed_keys, Keep It? [Y/N] " aed_opt
 
     # check for response
     if [[ "$aed_opt" =~ ^([nN][oO]|[nN])+$ ]]; then
       # prompt for custom path
       echo -e "$aed_ylw"
-      read -p 'Enter custom public key path: ' aed_keys
+      read -rp 'Enter custom public key path: ' aed_keys
     fi
 
     # prompt for filename
     echo -e "$aed_ylw"
-    read -p 'Enter public key filename, e.g. name_aws.pub: ' aed_key_name
+    read -rp 'Enter public key filename, e.g. name_aws.pub: ' aed_key_name
 
     # check for public key at path; import if found, otherwise throw warning
     if [ -f $aed_keys/$aed_key_name ]; then
@@ -90,7 +96,7 @@ aed_ec2_sec_group() {
 
     # prompt to remove
     echo -e "$aed_ylw"
-    read -r -p "Delete security group? [Y/N] " aed_opt
+    read -rp "Delete security group? [Y/N] " aed_opt
 
     # check for response
     if [[ "$aed_opt" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
@@ -108,10 +114,10 @@ aed_ec2_sec_group() {
 
     # prompt for security group name
     echo -e "$aed_ylw \n"
-    read -p 'Enter new security group name, e.g. blog-sg: ' aed_sec_group
+    read -rp 'Enter new security group name, e.g. blog-sg: ' aed_sec_group
 
     # prompt for security group description
-    read -p $'\nEnter security group description, e.g. Blog security group: ' \
+    read -rp $'\nEnter security group description, e.g. Blog security group: ' \
       aed_sec_group_desc
 
     # create security group
@@ -149,13 +155,13 @@ aed_ec2_sec_rules() {
 
 
   # prompt for custom ssh access port
-  read -p $'\n\nEnter custom port for remote access, e.g. 1337: ' \
+  read -rp $'\n\nEnter custom port for remote access, e.g. 1337: ' \
     aed_sec_rule_port
 
 # separate function for -secRule
     # cidr vs. my IP
   # prompt for cidr format
-  read -p $'\n\nEnter ISP IP, e.g. 1337: ' aed_ip_cidr
+  read -rp $'\n\nEnter ISP IP, e.g. 1337: ' aed_ip_cidr
 
 
   # create security group rules

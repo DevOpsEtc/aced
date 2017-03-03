@@ -84,7 +84,7 @@ aed_ec2_launch() {
   open https://us-west-1.console.aws.amazon.com/ec2/v2/home?region=$aed_params
 
   # enter AWS EC2 machine image (ami) id
-  read -p $'\nEnter aws ami id: ' aed_ec2_ami_id
+  read -rp $'\nEnter aws ami id: ' aed_ec2_ami_id
 
   # launch instance; add security group; attach EBS volume for storage
   echo -e "\n$aed_grn \bLaunching AWS EC2 Instance..."
@@ -101,7 +101,7 @@ aed_ec2_launch() {
   aws ec2 wait instance-running --instance-ids "$aed_ec2_ins_id"
 
   # prompt for tag key/value
-  read -p 'Enter name for your new instance: ' aed_ec2_name
+  read -rp 'Enter name for your new instance: ' aed_ec2_name
 
   # add tags
   aws ec2 create-tags --resources "$aed_ec2_ins_id" \
@@ -123,13 +123,13 @@ aed_ssh_alias() {
     --output text)
 
   # input cloud host alias
-  read -p $'\nEnter ssh alias for cloud host: ' aed_ssh_host
+  read -rp $'\nEnter ssh alias for cloud host: ' aed_ssh_host
 
   # input default user for cloud host
-  read -p $'\nEnter default user for cloud host: ' aed_os_user_default
+  read -rp $'\nEnter default user for cloud host: ' aed_os_user_default
 
   # input private key filename
-  read -p $'\nEnter private key filename: ' aed_key_identity
+  read -rp $'\nEnter private key filename: ' aed_key_identity
 
   # add ssh connection alias to ssh client config
   echo -e "\n$aed_grn \bAdding ssh alias $aed_ssh_host..."
@@ -148,7 +148,7 @@ aed_remote_user() {
   #################################################################
 
   # input username
-  read -p $'\nEnter username for new user: ' aed_os_user
+  read -rp $'\nEnter username for new user: ' aed_os_user
 
   # input password
   read -sp $'\nEnter password for new user: ' aed_os_user_pass
@@ -200,7 +200,7 @@ aed_eip() {
     echo -e "$aed_grn\n"
 
     # prompt to release
-    read -r -p "Release EIP? [Y/N] " aed_opt
+    read -rp "Release EIP? [Y/N] " aed_opt
 
     # check for response
     if [[ "$aed_opt" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
@@ -251,7 +251,7 @@ aed_terminate(){
   #################################################################
 
   echo -e $aed_ylw ""
-  read -r -p "Terminate AWS EC2 Instance? [Y/N] " aed_opt
+  read -rp "Terminate AWS EC2 Instance? [Y/N] " aed_opt
   if [[ "$aed_opt" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
 
     # terminate instance

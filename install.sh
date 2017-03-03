@@ -12,23 +12,23 @@
 aed_install() {
   clear
   aed_version # invoke function: AED release info
-  echo -e "\n$aed_grn
+  echo -e "$aed_wht
   \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
   \b\bXXXXXXXX  AED Install:  XXXXXXXX
   \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 
   # create file structure & list results
   echo -e "\n$aed_grn \bCreating file structure..."
-  mkdir -p $aed_root/{bin,config,data,keys}
-  echo -e "\n$aed_blu \bCreated: "; find $aed_root -type d -maxdepth 1
+  mkdir -p $aed_root/{bin,config/aws,data,keys}
+  echo -e "$aed_blu"; find $aed_root -type d -maxdepth 2
 
-  echo -e "\n$aed_grn
+  echo -e "$aed_wht
   \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
   \b\bXXXXXXXX  Confirm Prerequisites:  XXXXXX
-  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n $aed_ylw"
 
   # prompt for aws account prerequisite
-  read -r -p "Are you signed up for a free acount at AWS yet? [Y/N] " aed_opt
+  read -rp "Are you signed up for a free acount at AWS yet? [Y/N] " aed_opt
 
   # check for response
   if [[ "$aed_opt" =~ ^([nN][oO]|[nN])+$ ]]; then
@@ -49,11 +49,11 @@ aed_install() {
     # prompt to continue
     read -p "Install aws-cli, then press enter key to continue"
   else
-    echo -e "\n$aed_blu \bThe aws-cli app was found! $aed_grn"
+    echo -e "\n$aed_blu \bThe aws-cli app was found! $aed_ylw"
   fi
 
   # prompt for key pair prerequisite
-  read -r -p $'\n'"Do you have a public-key encryption keypair? [Y/N] " aed_opt
+  read -rp $'\n'"Do you have a public-key encryption keypair? [Y/N] " aed_opt
 
   # check for response
   if [[ "$aed_opt" =~ ^([nN][oO]|[nN])+$ ]]; then
@@ -69,16 +69,16 @@ aed_install() {
   fi
 
   echo -e "\n$aed_ylw \bPrerequisites confirmed!"
-}
+} # end function: aed_install
 
 aed_uninstall() {
-  echo -e "\n$aed_grn
+  echo -e "\n$aed_wht
   \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
   \b\bXXXXXXXX  AED Uninstall:  XXXXXX
   \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 
   # prompt to remove
-  echo $aed_ylw; read -r -p "Really uninstall AED? [Y/N] " aed_opt
+  echo $aed_ylw; read -rp "Really uninstall AED? [Y/N] " aed_opt
 
   # check for response
   if [[ "$aed_opt" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
@@ -95,21 +95,21 @@ aed_uninstall() {
     echo -e "\n$aed_grn \bRemoving AED app directory..."
     rm -rf $aed_app
 
-    echo $aed_ylw; read -r -p "Remove AED bin directory? [Y/N] " aed_opt
+    echo $aed_ylw; read -rp "Remove AED bin directory? [Y/N] " aed_opt
 
     if [[ "$aed_opt" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
       echo -e "\n$aed_grn \bRemoving AED bin directory..."
       rm -rf $aed_bin
     fi
 
-    echo $aed_ylw; read -r -p "Remove AED config directory? [Y/N] " aed_opt
+    echo $aed_ylw; read -rp "Remove AED config directory? [Y/N] " aed_opt
 
     if [[ "$aed_opt" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
       echo -e "\n$aed_grn \bRemoving AED config directory..."
       rm -rf $aed_config
     fi
 
-    echo $aed_ylw; read -r -p "Remove AED data directory & repo? [Y/N] " aed_opt
+    echo $aed_ylw; read -rp "Remove AED data directory & repo? [Y/N] " aed_opt
 
     if [[ "$aed_opt" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
       echo -e "\n$aed_grn \bRemoving AED data directory..."
@@ -130,4 +130,4 @@ aed_uninstall() {
     aed_version
     echo -e "\n$aed_blu \bThanks for trying AED!"
   fi
-}
+} # end function: aed_uninstall
