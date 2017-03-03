@@ -12,25 +12,25 @@
 **What is AED:** <br>
 AED is an Amazon Web Services EC2 instance generator. Highly opinionated and user configurable, AED automates AWS API calls via the aws-cli app to create a fast, secure & lightweight server running the Ghost publishing platform.
 
-  - Single EC2 Instance with EBS volume
-  - Elastic IP for custom domain name
-  - S3 storage
-  - Hardened Ubuntu Server 16.04 LTS
-  - Non-root user with remote access over VPN
-  - Automatic security updating
+- Single EC2 Instance with EBS volume
+- Elastic IP for custom domain name
+- S3 storage
+- Hardened Ubuntu Server 16.04 LTS
+- Non-root user with remote access over VPN
+- Automatic security updating
 
 Apps installed & configured:
 
-  - iptables
-  - fail2ban
-  - openSSH
-  - NGINX
-  - Node.js
-  - Express.js
-  - postgreSQL
-  - Ghost
-  - Git
-  - OpenVPN
+- iptables
+- fail2ban
+- openSSH
+- NGINX
+- Node.js
+- Express.js
+- postgreSQL
+- Ghost
+- Git
+- OpenVPN
 
 **Why Use AED:** <br>
 Wicked fast deployment of a web server/blog on the cheap. Just how fast? Launch instance, harden server, install/config apps and push to remote repo quicker than you can drink a grande skinny latte! Just how cheap? FREE for a year, can't beat that!
@@ -38,21 +38,21 @@ Wicked fast deployment of a web server/blog on the cheap. Just how fast? Launch 
 Designed for lazy people by a lazy person. Don't build your web server by hand anymore, and stop using the AWS Management Console for every darn EC2 task.
 
 **Prerequisites:** <br>
-  - Register for free AWS account: <br>
-      https://aws.amazon.com/free
+- Register for free AWS account: <br>
+    https://aws.amazon.com/free
 
-  - Install aws-cli for AWS API access: <br>
-      http://docs.aws.amazon.com/cli/latest/userguide/cli-install-macos.html
+- Install aws-cli for AWS API access: <br>
+    http://docs.aws.amazon.com/cli/latest/userguide/cli-install-macos.html
 
-  - Have existing or generate a new public-key encryption key pair: <br>
-      https://github.com/DevOpsEtc/bin/blob/master/key_pair.sh
+- Have existing or generate a new public-key encryption key pair: <br>
+    https://github.com/DevOpsEtc/bin/blob/master/key_pair.sh
 
 **Installing AED:** <br>
-  1. clone deploy repo <br>
-  `$ git clone https://github.com/DevOpsEtc/aed ~/aed/app`
+1. clone deploy repo <br>
+`$ git clone https://github.com/DevOpsEtc/aed ~/aed/app`
 
-  2. source AED app <br>
-  `$ . ~/aed/app/aed.sh`
+2. source AED app <br>
+`$ . ~/aed/app/aed.sh`
 
 **Getting Started:** <br>
 
@@ -98,13 +98,11 @@ $ git push -u origin master
 ```
 
 **Notes:** <br>
-- Scripts were coded for Mac OSX, but will work with Linux with minor mods to command flags
+- Scripts were coded for Mac OSX, but will work with Linux with minor mods to some command flags
 - Windows could work if bash and other commands are installed and file paths are adjusted accordingly
 - Scripts written against aws-cli version 1.11.48 commands
-- Extend AED with other aws-cli scripts; see the examples folder after installation:
 
-**Roadmap:**
-
+**Roadmap:** <br>
 - Write Uninstaller Script
 - Install/Config Apps:
 	-  ZNC (IRC bouncer)
@@ -114,6 +112,6 @@ $ git push -u origin master
       - PostFix
       - DoveCot
       - SpamAssin
-- Refactor using python: https://aws.amazon.com/sdk-for-python/
+- Refactor using Python: https://aws.amazon.com/sdk-for-python/
 
 **PRs welcome, or fork it (YMMV!)**

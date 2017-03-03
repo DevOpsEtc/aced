@@ -4,7 +4,7 @@
 ##  filename:   install.sh                                     ##
 ##  path:       ~/src/deploy/cloud/aws/                        ##
 ##  purpose:    create file structure & confirm prerequisites  ##
-##  date:       03/02/2017                                     ##
+##  date:       03/03/2017                                     ##
 ##  repo:       https://github.com/DevOpsEtc/aed               ##
 ##  clone path: ~/aed/app/                                     ##
 #################################################################
@@ -13,14 +13,20 @@ aed_install() {
   clear
   aed_version # invoke function: AED release info
   echo -e "$aed_wht
-  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-  \b\bXXXXXXXX  AED Install:  XXXXXXXX
-  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  \b\bXXXXXXXX  AED Install:  XXXXXXXXXXXXXXXX
+  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 
   # create file structure & list results
   echo -e "\n$aed_grn \bCreating file structure..."
   mkdir -p $aed_root/{bin,config/aws,data,keys}
   echo -e "$aed_blu"; find $aed_root -type d -maxdepth 2
+
+  # check for/create alias that sources AED
+  echo -e "\n$aed_grn \bCreating alias..."
+  if ! alias | grep -qw 'aed='; then
+    alias aed='. ~/aed/app/aed.sh'
+  fi
 
   echo -e "$aed_wht
   \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -30,13 +36,11 @@ aed_install() {
   # prompt for aws account prerequisite
   read -rp "Are you signed up for a free acount at AWS yet? [Y/N] " aed_opt
 
-  # check for response
   if [[ "$aed_opt" =~ ^([nN][oO]|[nN])+$ ]]; then
     echo -e "\n$aed_grn \bOpening AWS website to free tier page... \n$aed_ylw"
     # open aws free tier info page using default browser
     open https://aws.amazon.com/free/
 
-    # prompt to continue
     read -p "Create a free AWS account, then press enter key to continue"
   fi
 
@@ -55,7 +59,6 @@ aed_install() {
   # prompt for key pair prerequisite
   read -rp $'\n'"Do you have a public-key encryption keypair? [Y/N] " aed_opt
 
-  # check for response
   if [[ "$aed_opt" =~ ^([nN][oO]|[nN])+$ ]]; then
     # script check; grab if not found
     if [ ! -f $aed_bin/key_pair.sh ]; then
@@ -73,24 +76,23 @@ aed_install() {
 
 aed_uninstall() {
   echo -e "\n$aed_wht
-  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-  \b\bXXXXXXXX  AED Uninstall:  XXXXXX
-  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  \b\bXXXXXXXX  AED Uninstall:  XXXXXXXXXXXXXX
+  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 
-  # prompt to remove
   echo $aed_ylw; read -rp "Really uninstall AED? [Y/N] " aed_opt
 
-  # check for response
   if [[ "$aed_opt" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
     echo -e "\n$aed_grn \bRemoving AED shell functions..."
-    # store functions names to delete (aed & aed_*)
     aed_rmFun=$(declare -F | awk '/\ aed_/ {print $3}')
     unset -f $aed_rmFun
 
     echo -e "\n$aed_grn \bRemoving AED shell variables..."
-    # store variable names to delete (aed & aed_*)
     aed_rmVar=$(set | awk '/^aed_/ {sub(/=.*/,""); print}')
     unset $aed_rmVar aed_rmVar
+
+    echo -e "\n$aed_grn \bRemoving alias..."
+    unalias aed
 
     echo -e "\n$aed_grn \bRemoving AED app directory..."
     rm -rf $aed_app
@@ -120,7 +122,7 @@ aed_uninstall() {
     rm -rf $aed_aws_dotfile
 
     echo -e "\n$aed_grn \bRemoving ssh connection alias..."
-    sed -i '' "/^Host $aed_ssh_host$/{N;N;N;N;N;d;}" $aed_ssh_cfg
+    sed -i '' "/^Host $aed_ssh_alias$/{N;N;N;N;N;d;}" $aed_ssh_cfg
 
     echo -e "\n$aed_ylw \bAED was removed from localhost, but AWS IAM \
     \b\bgroup/user/access keys, EIP, EC2 instance, keypair, security \

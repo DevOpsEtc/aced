@@ -9,23 +9,35 @@
 ##  clone path: ~/aed/app/                        ##
 ####################################################
 
-# invoke all functions in script
 aed_iam() {
+  echo -e "$aed_wht
+  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  \b\bXXXXXXX AWS IAM: All Functions:  XXXXXXXXXXXXXXXXX
+  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
   aed_iam_root_keys
   aed_iam_group
   aed_iam_user
   aed_iam_user_keys
   aed_iam_root_keys_rm
   aed_aws_config
-} # end function: aed_iam
+}
+
+aed_iam_rotate_keys() {
+  echo -e "$aed_wht
+  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  \b\bXX  AWS IAM: Rotate IAM User Access Keys:  XXXXXXX
+  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+  aed_iam_user_keys
+  aed_aws_config
+}
 
 aed_iam_root_keys() {
   echo -e "$aed_wht
-  \b\b######################################################
-  \b\b##  AWS IAM: Create Temporary Root Access Keys  ######
-  \b\b######################################################"
+  \b\b##################################################
+  \b\b##  AWS IAM: Create Temporary Root Access Keys  ##
+  \b\b##################################################"
 
-  echo -e "$aed_ylw
+  echo -e "$aed_grn
   1. Open https://console.aws.amazon.com/iam/home#/security_credential
   2. Sign in to your account if prompted
   3. Click "Continue to Security Credentials" if message modal appears
