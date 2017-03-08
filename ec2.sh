@@ -4,7 +4,7 @@
 ##  filename:   ec2.sh                            ##
 ##  path:       ~/src/deploy/cloud/aws/           ##
 ##  purpose:    launch instance & initial config  ##
-##  date:       03/01/2017                        ##
+##  date:       03/03/2017                        ##
 ##  repo:       https://github.com/DevOpsEtc/aed  ##
 ##  clone path: ~/aed/app/                        ##
 ####################################################

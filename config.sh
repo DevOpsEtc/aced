@@ -9,10 +9,7 @@
 ##  clone path: ~/aed/app/                        ##
 ####################################################
 
-# assign default AED values
-aed_ver="1.0.0"                        # AED release version
-aed_installed=false                    # AED installed status
-aed_ip=000.000.000.000                 # AWS EC2 public IP address
+# File Paths
 aed_root=~/aed                         # AED root
 aed_app=$aed_root/app                  # AED app path
 aed_bin=$aed_root/bin                  # AED bin path
@@ -29,14 +26,21 @@ aed_ssh_dotfile=~/.ssh                 # SSH dotfile path
 aed_ssh_cfg=$aed_ssh_dotfile/config    # SSH config file
 aed_ssh_alias=aed                      # SSH connection alias
 
-# placeholders for AED values; populated post-install
-aed_eip_address=000.000.000.000
-aed_iam_group_name=
-aed_iam_policy_name=
-aed_iam_user_name=
-aed_ec2_instance_id=
-aed_ec2_user_name=
+# AED Values for AWS Assets
+aed_ver="1.0.0"                        # AED release version
+aed_installed=false                    # AED installed status
+aed_ok_icon="\xE2\x9C\x94"             # checkmark symbol (UTF-8 hex code)
+aed_eip_address=000.000.000.000        # AWS EC2 public IP address
+aed_iam_group=""
+aed_iam_policy=""
+aed_iam_user=""
+aed_ec2_key=""
+aed_ec2_key_pub=""
+aed_ec2_group=""
+aed_ec2_user=""
+aed_ec2_id=""
 
+# used post-install
 # assign pretty text attributes
 aed_blu=$(tput bold && tput setaf 33)  # bold blue
 aed_ylw=$(tput bold && tput setaf 136) # bold yellow

@@ -4,16 +4,12 @@
 ##  filename:   iam.sh                            ##
 ##  path:       ~/src/deploy/cloud/aws/           ##
 ##  purpose:    IAM group, policy, user           ##
-##  date:       03/02/2017                        ##
+##  date:       03/04/2017                        ##
 ##  repo:       https://github.com/DevOpsEtc/aed  ##
 ##  clone path: ~/aed/app/                        ##
 ####################################################
 
 aed_iam() {
-  echo -e "$aed_wht
-  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-  \b\bXXXXXXX AWS IAM: All Functions:  XXXXXXXXXXXXXXXXX
-  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
   aed_iam_root_keys
   aed_iam_group
   aed_iam_user
@@ -23,43 +19,40 @@ aed_iam() {
 }
 
 aed_iam_rotate_keys() {
-  echo -e "$aed_wht
-  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-  \b\bXX  AWS IAM: Rotate IAM User Access Keys:  XXXXXXX
-  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
   aed_iam_user_keys
   aed_aws_config
 }
 
 aed_iam_root_keys() {
   echo -e "$aed_wht
-  \b\b##################################################
-  \b\b##  AWS IAM: Create Temporary Root Access Keys  ##
-  \b\b##################################################"
+  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  \b\bXX  Create Temporary Root Access Keys  XX
+  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 
   echo -e "$aed_grn
   1. Open https://console.aws.amazon.com/iam/home#/security_credential
   2. Sign in to your account if prompted
-  3. Click "Continue to Security Credentials" if message modal appears
+  3. Click \"Continue to Security Credentials\" if message modal appears
   4. Expand \"Access Keys (Access Key ID and Secret Access Key)\"
   5. Delete an access key if needed (only two allowed)
   6. Click button \"Create New Access Key\"
   7. Expand \"Show Access Key\" in modal"
 
   # wait 5 seconds before opening website in browser
-  sleep 5 && open https://console.aws.amazon.com/iam/home#/security_credential
+  sleep 3 && open https://console.aws.amazon.com/iam/home#/security_credential
 
   # configure aws-cli with credentials
   echo -e "\n$aed_grn \bCopy/paste AWS access keys (enter nothing for default \
   \b\bregion & output) \n$aed_ylw"
-  aws configure
+  aws configure && echo -e "\n$aed_blu $aed_ok_icon" || return
+
 } # end function: aed_iam_root_keys
 
 aed_iam_group() {
   echo -e "$aed_wht
-  \b\b######################################################
-  \b\b##  AWS IAM: Check Existing Group  ###################
-  \b\b######################################################"
+  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  \b\bXX  Check Existing IAM Group  XXXXXXXXXXX
+  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 
   # populate array with group names
   aed_get_group=($(aws iam list-groups \
@@ -67,15 +60,14 @@ aed_iam_group() {
     --output text)
   )
 
-  # check for IAM groups; print names; prompt to delete
   if [ ${#aed_get_group[@]} -ne 0 ]; then
-    echo -e "\n$aed_blu \bFound existing IAM group(s): "
+    echo -e "\n$aed_ylw \bFound IAM group(s): "
     echo $aed_blu; printf '%s\n' "${aed_get_group[@]}"
-    echo $aed_ylw; read -rp "Delete existing IAM group(s)? [Y/N] " aed_opt
+    echo $aed_ylw; read -rp "Delete all IAM group(s)? [Y/N] " aed_opt
+    echo
 
-    # check for response
     if [[ "$aed_opt" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
-      # loop through list of groups names
+      # loop through list of group names
       for g in "${aed_get_group[@]}"; do
         # populate array with a group's usernames
         aed_get_group_user=($(aws iam get-group \
@@ -88,7 +80,7 @@ aed_iam_group() {
         if [ ${#aed_get_group_user[@]} -ne 0 ]; then
           # loop through list of usernames
           for u in "${aed_get_group_user[@]}"; do
-            echo -e "\n$aed_grn \bRemoving user: $u from group: $g..."
+            echo -e "$aed_grn \bRemoving user: $u from group: $g..."
             aws iam remove-user-from-group --user-name "$u" --group-name "$g"
           done
         fi
@@ -104,18 +96,17 @@ aed_iam_group() {
         if [ ${#aed_get_group_pol[@]} -ne 0 ]; then
           # loop through list of policy names
           for p in "${aed_get_group_pol[@]}"; do
-            echo -e "\n$aed_grn \bRemoving policy: $p from group: $g..."
+            echo -e "$aed_grn \bRemoving policy: $p from group: $g..."
             aws iam delete-group-policy --group-name "$g" --policy-name "$p"
           done
         fi
 
-        # remove group
-        echo -e "\n$aed_grn \bDeleting IAM group: $g..."
-        aws iam delete-group --group-name "$g"
-
-        # delete array
-        unset aed_get_group
+        echo -e "$aed_grn \bDeleting IAM group: $g..."
+        aws iam delete-group --group-name "$g" \
+        && echo -e "\n$aed_blu $aed_ok_icon" || return
       done
+
+      unset aed_get_group
     else
       echo -e "\n$aed_grn \bKeeping IAM group(s)!"
     fi
@@ -124,47 +115,44 @@ aed_iam_group() {
   fi
 
   echo -e "$aed_wht
-  \b\b######################################################
-  \b\b##  AWS IAM: Create New Group  #######################
-  \b\b######################################################"
+  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  \b\bXX  Create New IAM Group  XXXXXXXXXXXXXXX
+  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 
-  # delete group vars
-  unset aed_group_name_ok aed_group
+  unset aed_iam_group_name aed_iam_group # delete group vars
 
-  # do while new group name is invalid
-  while [ ! "$aed_group_name_ok" ]; do
-    # prompt for new group name
+  while [ "$aed_iam_group_name" != "valid" ] ; do
     echo $aed_ylw
-    read -rp "Enter name for new AWS IAM group, e.g. name_group: " aed_group
+    read -rp "Enter name for new AWS IAM group, e.g. name_group: " \
+      aed_iam_group
 
     # check for existing IAM group name; kick back to while loop if found
-    # if $(aws iam list-groups | grep -q "$aed_group"); then
-    if echo "${aed_get_group[@]}" | grep -q -w "$aed_group"; then
-      echo -e "\n$aed_red \bAWS IAM group already exists: $aed_group"
+    if echo "${aed_get_group[@]}" | grep -q -w "$aed_iam_group"; then
+      echo -e "\n$aed_red \bAWS IAM group already exists: $aed_iam_group"
     else
-      aed_group_name_ok=true
+      aed_iam_group_name=valid
     fi
   done
 
-  echo -e "\n$aed_grn \bCreating IAM group: $aed_group..."
-  echo $aed_blu; aws iam create-group --group-name $aed_group
+  echo -e "\n$aed_grn \bCreating $aed_iam_group..."
+  echo $aed_blu; aws iam create-group --group-name $aed_iam_group \
+    && echo -e "\n$aed_blu $aed_ok_icon" || return
 
   echo -e "$aed_wht
-  \b\b#######################################################
-  \b\b##  AWS IAM: Create Embedded Inline Policy in group  ##
-  \b\b#######################################################"
+  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  \b\bXX  Create Embedded Inline IAM Policy  XX
+  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 
   # online generator: https://awspolicygen.s3.amazonaws.com/policygen.html
 
   echo $aed_ylw
-  read -rp "Enter name for new IAM policy on: $aed_group, e.g. name_policy: " \
-    aed_policy
+  read -rp "Enter name for new IAM policy, e.g. name_policy: " aed_iam_policy
 
-  echo -e "\n$aed_grn \bEmbedding inline policy: $aed_policy to IAM group: \
-  \b\b$aed_group... \n$aed_blu"
+  echo -e "\n$aed_grn \bEmbedding policy: $aed_iam_policy to group: \
+  \b\bXX\b$aed_iam_group... $aed_blu"
   aws iam put-group-policy \
-    --group-name $aed_group \
-    --policy-name $aed_policy \
+    --group-name $aed_iam_group \
+    --policy-name $aed_iam_policy \
     --policy-document \
     '{
         "Version": "2012-10-17",
@@ -191,16 +179,18 @@ aed_iam_group() {
           }
         ]
       }
-    '
-  # confirm policy is attached to group
-  aws iam list-group-policies --group-name $aed_group
-} # end function: aed_iam_group
+    ' \
+    && echo -e "\n$aed_blu $aed_ok_icon" || return
+
+  # invoke function to update placeholder values of passed args in AED config
+  aed_update_config aed_iam_group aed_iam_policy
+}
 
 aed_iam_user() {
   echo -e "$aed_wht
-  \b\b######################################################
-  \b\b##  AWS IAM: Check Existing User  ####################
-  \b\b######################################################"
+  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  \b\bXX  Check Existing IAM User  XXXXXXXXXXXX
+  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 
   # populate array with usernames
   aed_get_user=($(aws iam list-users \
@@ -230,13 +220,14 @@ aed_iam_user() {
         if [ ${#aed_get_user_keys[@]} -ne 0 ]; then
           # loop through list of access key IDs
           for k in "${aed_get_user_keys[@]}"; do
-            echo -e "\n$aed_grn \bRemoving access key ID: $k from user: $i..."
+            echo -e "\n$aed_grn \bRemoving access key for user: $i..."
             aws iam delete-access-key --access-key $k --user-name "$i"
           done
         fi
 
-        echo -e "\n$aed_grn \bDeleting IAM user: $i..."
-        aws iam delete-user --user-name "$i"
+        echo -e "$aed_grn \bDeleting IAM user: $i..."
+        aws iam delete-user --user-name "$i" \
+          && echo -e "\n$aed_blu $aed_ok_icon" || return
 
         # delete array
         unset aed_get_user
@@ -249,51 +240,55 @@ aed_iam_user() {
   fi
 
   echo -e "$aed_wht
-  \b\b######################################################
-  \b\b##  AWS IAM: Create New User  ########################
-  \b\b######################################################"
+  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  \b\bXX  Create New IAM User  XXXXXXXXXXXXXXXX
+  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 
-  unset aed_username aed_user
+  unset aed_iam_username aed_iam_user
 
-  while [ "$aed_username" != "valid" ] ; do
+  while [ "$aed_iam_username" != "valid" ] ; do
     echo $aed_ylw;
-    read -rp "Enter name for new IAM user, e.g name_ec2_admin: " aed_user
+    read -rp "Enter name for new IAM user, e.g name_admin: " aed_iam_user
 
     # check for existing IAM username; kick back to while loop if found
-    if echo "${aed_get_user[@]}" | grep -q -w "$aed_user"; then
-      echo -e "\n$aed_red \bAWS IAM username already exists: $aed_user $rs"
+    if echo "${aed_get_user[@]}" | grep -q -w "$aed_iam_user"; then
+      echo -e "\n$aed_red \bAWS IAM username already exists: $aed_iam_user $rs"
     else
-      aed_username=valid
+      aed_iam_username=valid
     fi
   done
 
-  echo -e "\n$aed_grn \bCreating IAM user: $aed_user...\n$aed_blu"
-  aws iam create-user --user-name $aed_user
+  echo -e "\n$aed_grn \bCreating $aed_iam_user... \n$aed_blu"
+  aws iam create-user --user-name $aed_iam_user \
+    && echo -e "\n$aed_blu $aed_ok_icon" || return
 
-  echo -e "\n$aed_grn \bAdding IAM user: $aed_user to IAM group: $aed_group..."
-  aws iam add-user-to-group --user-name $aed_user --group-name $aed_group
-} # end function: aed_iam_user
+  echo -e "\n$aed_grn \bAdding IAM user: $aed_iam_user to $aed_iam_group..."
+  aws iam add-user-to-group \
+    --user-name $aed_iam_user \
+    --group-name $aed_iam_group \
+    && echo -e "\n$aed_blu $aed_ok_icon" || return
+
+  # invoke function to update placeholder values of passed args in AED config
+  aed_update_config aed_iam_user
+}
 
 aed_iam_user_keys() {
   echo -e "$aed_wht
-  \b\b#######################################################
-  \b\b##  AWS IAM: Create User Access Keys  #################
-  \b\b#######################################################"
-
-  if [ "$aed_installed" == true ]; then
-    read -rp "Rotate keys for which user? " aed_user
-  fi
+  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  \b\bXX  Create IAM User Access Keys  XXXXXXXX
+  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 
   # create IAM user access key; redirect awk output to file
-  echo -e "\n$aed_grn \bCreating an access key for IAM user: $aed_user..."
-  aws iam create-access-key --user-name $aed_user \
+  echo -e "\n$aed_grn \bCreating an access key for IAM user: $aed_iam_user..."
+  aws iam create-access-key --user-name $aed_iam_user \
     | awk '/AccessKeyId/ || /SecretAccessKey/ { \
     gsub(/"/, ""); \
     gsub(/,/, ""); \
     gsub(/:/, "="); \
     gsub(/AccessKeyId/, "aws_access_key_id ", $1); \
     gsub(/SecretAccessKey/, "aws_secret_access_key ", $1); \
-    print $1,$2}' > $aed_aws_crd_tmp
+    print $1,$2}' > $aed_aws_crd_tmp \
+    && echo -e "\n$aed_blu $aed_ok_icon" || return
 
   # insert profile name to top of temp AWS credentials file
   sed -i '' '1i\
@@ -310,13 +305,13 @@ aed_iam_user_keys() {
   echo "[default]" >> $aed_aws_cfg
   echo "output = json" >> $aed_aws_cfg
   echo "region = us-west-1" >> $aed_aws_cfg # us-east-1, us-east-2, us-west-2
-} # end function: aed_iam_user_keys
+}
 
 aed_iam_root_keys_rm() {
   echo -e "$aed_wht
-  \b\b#######################################################
-  \b\b##  AWS IAM: Delete Root Access Keys  #################
-  \b\b#######################################################"
+  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  \b\bXX  Delete Root Access Keys  XXXXXXXXXXXX
+  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 
   # populate array with a root's access key IDs
   aed_get_root_keys=($(aws iam list-access-keys \
@@ -329,33 +324,34 @@ aed_iam_root_keys_rm() {
     # loop through list of access key IDs
     for k in "${aed_get_root_keys[@]}"; do
       echo -e "\n$aed_grn \bRemoving access key ID: $k from root..."
-      aws iam delete-access-key --access-key $k
+      aws iam delete-access-key --access-key $k \
+      && echo -e "\n$aed_blu $aed_ok_icon" || return
     done
   fi
-} # end function: aed_iam_root_keys_rm
+}
 
 aed_aws_config() {
   echo -e "$aed_wht
-  \b\b#######################################################
-  \b\b##  Localhost AWS Configuration  ######################
-  \b\b#######################################################"
+  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  \b\bXX  Localhost AWS Configuration  XXXXXXXX
+  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 
   # backup any existing AWS config
   if [ -d $aed_aws_dotfile ]; then
     mv -f $aed_aws_dotfile/* $aed_aws_dotfile_bk &>/dev/null
-    echo -e "\n$aed_ylw \bExisting localhost AWS configuration was found and \
-    \b\b\b\bsaved to: "
+    echo -e "\n$aed_ylw \bExisting AWS dotfiles found and saved to: "
     echo $aed_blu; find $aed_aws_dotfile_bk
   fi
 
   # overwrite localhost AWS credentials file
-  echo -e "\n$aed_wht \bUpdating localhost AWS credentials for new IAM user: \
-  \b\b$aed_user...\n$aed_blu"
-  mv -f $aed_aws_crd_tmp $aed_aws_crd
+  echo -e "\n$aed_grn \bUpdating AWS credentials for: $aed_iam_user...\n
+    $aed_blu"
+  mv -f $aed_aws_crd_tmp $aed_aws_crd \
+    && echo -e "\n$aed_blu $aed_ok_icon" || return
 
   # symlink AWS config & credentials files to default location
-  echo -e "\n$aed_grn \bCreating symlinks to AWS credentials in default \
-  \b\blocation..."
-  ln -sf $aed_aws_cfg $aed_aws_dotfile
-  ln -sf $aed_aws_crd $aed_aws_dotfile
-} # end function: aed_aws_config
+  echo -e "\n$aed_grn \bCreating AWS dotfile symlinks... \n$aed_blu"
+  ln -sf $aed_aws_cfg $aed_aws_dotfile \
+    && ln -sf $aed_aws_crd $aed_aws_dotfile \
+    && echo -e "\n$aed_blu $aed_ok_icon" || return
+}

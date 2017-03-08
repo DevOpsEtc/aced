@@ -109,9 +109,12 @@ aed_tasks() {
     select t in "${aed_task_option[@]}"; do
       case $t in
         "IAM: Rotate Access Keys")
-          aed_iam_rotate_keys
+          aed_iam_user_keys
           break ;;
         "EIP: Rotate IP Address")
+          break ;;
+        "EC2: Rotate Key Pair")
+          aed_ec2_rotate_keys
           break ;;
         "EC2: Add Remote Access Rule")
           break ;;
@@ -156,7 +159,7 @@ aed_main() {
       install.sh     # AED install/uninstall
       iam.sh         # AWS IAM security tasks
       ec2_sec.sh     # AWS EC2 security tasks
-      # ec2.sh         # AWS EC2 instance tasks
+      ec2.sh         # AWS EC2 instance tasks
       # os_sec.sh      # OS hardening tasks
       # os_app.sh      # OS app tasks
       # data.sh        # OS app tasks
@@ -172,10 +175,11 @@ aed_main() {
       aed_install    # invoke function for AED install
       aed_iam        # invoke function for AWS IAM tasks
       aed_ec2_sec    # invoke function for AWS EC2 security tasks
+      aed_ec2        # invoke function for AWS EC2 instance tasks
       # aed_os_sec     # invoke function for Ubuntu server hardening tasks
       # aed_os_app     # invoke function for Ubuntu server app tasks
       sed -i '' '/aed_installed=/ s/false/true /' $aed_app/config.sh
-      echo -e "\n$aed_blu \bAED Installed! \nEnter $ aed or $ aed -h"
+      echo -e "\n$aed_blu \bAED Installed! \n\nEnter $ aed or $ aed -h"
     fi
 
     # strip off any prefixed hypen from passed argument
