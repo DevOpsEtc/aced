@@ -41,12 +41,14 @@ ec2_sec_keypair() {
     if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
       for k in "${get_kp_local[@]}"; do
         echo -e "\n$green \bDeleting localhost key pair: $k..."
-        rm -f "$k" && echo -e "\n$blue $icon_pass" || return
+        rm -f "$k"
+        return_check
       done
 
       for p in "${get_prv_local[@]}"; do
         echo -e "\n$green \bRemoving private key from SSH agent: $k..."
-        ssh-add -d "$p" && echo -e "\n$blue $icon_pass" || return
+        ssh-add -d "$p"
+        return_check
       done
 
       unset get_kp_local get_prv_local
@@ -77,8 +79,8 @@ ec2_sec_keypair() {
     if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
       for k in "${get_key_pair[@]}"; do
         echo -e "\n$green \bDeleting EC2 key pair: $k..."
-        aws ec2 delete-key-pair --key-name "$k" \
-        && echo -e "\n$blue $icon_pass" || return
+        aws ec2 delete-key-pair --key-name "$k"
+        return_check
       done
       unset get_key_pair
     else
@@ -114,22 +116,21 @@ ec2_sec_keypair() {
   \b\bStore passphrase in a secure location!"
 
   echo -e "\n$green \bCreating key pair: $ec2_key... \n$blue"
-  ssh-keygen -t rsa -b 4096 -f $keys/$ec2_key -C "$ec2_key" \
-  && echo -e "\n$blue $icon_pass" || return
+  ssh-keygen -t rsa -b 4096 -f $keys/$ec2_key -C "$ec2_key"
+  return_check
 
   echo -e "\n$green \bSetting file permissions on keypair: \
   \b\b$ec2_key... \n$blue"
-  chmod =,u+r $keys/$key_name \
-    && chmod =,u+rw $keys/$key_name_pub \
-    && echo -e "\n$blue $icon_pass" || return
+  chmod =,u+r $keys/$key_name && chmod =,u+rw $keys/$key_name_pub
+  return_check
 
   echo -e "\n$green \bCreating symlink to private key... \n$blue"
-  ln -sf $keys/$ec2_key $ssh_config \
-    && echo -e "\n$blue $icon_pass" || return
+  ln -sf $keys/$ec2_key $ssh_config
+  return_check
 
   echo -e "\n$green \bAdding private key to SSH agent... \n$blue"
-  /usr/bin/ssh-add -K $keys/$ec2_key \
-    && echo -e "\n$blue $icon_pass" || return
+  /usr/bin/ssh-add -K $keys/$ec2_key
+  return_check
 
   echo -e "$white
   \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -139,8 +140,8 @@ ec2_sec_keypair() {
   echo -e "\n$green \bImporting public key... \n$reset"
   aws ec2 import-key-pair \
   --key-name $key_name_pub \
-  --public-key-material file://$keys/$key_name_pub \
-  && echo -e "\n$blue $icon_pass" || return
+  --public-key-material file://$keys/$key_name_pub
+  return_check
 
   # invoke function to update placeholder values of passed args in AED config
   update_config ec2_key ec2_key_pub
@@ -169,8 +170,8 @@ ec2_sec_group() {
         # loop through list of EC2 group names
         for g in "${get_ec2_group[@]}"; do
           echo -e "\n$green \bDeleting security group..."
-          aws ec2 delete-security-group --group-name "$g" \
-          && echo -e "\n$blue $icon_pass" || return
+          aws ec2 delete-security-group --group-name "$g"
+          return_check
         done
 
         unset get_ec2_group
@@ -208,8 +209,8 @@ ec2_sec_group() {
   echo -e "\n$green \bCreating $ec2_group..."
   echo $blue; aws ec2 create-security-group \
     --group-name $ec2_group \
-    --description "$sec_group_desc" \
-    && echo -e "\n$blue $icon_pass" || return
+    --description "$sec_group_desc"
+  return_check    
 
   # invoke function to update placeholder values of passed args in AED config
   update_config ec2_group

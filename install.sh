@@ -37,16 +37,20 @@ install() {
 
   # create file structure & list results
   echo -e "\n$green \bCreating file structure..."
-  mkdir -p $aed_root/{config/{aws,keys},data} \
-    && echo -e "\n$blue $icon_pass" || return
+  mkdir -p $aed_root/{config/{aws,keys},data}
+
+  # invoke function to check status code of last command
+  return_check
+
+  # list new directories
   echo -e "$blue"; find $aed_root -type d -maxdepth 2
 
   # check for/create alias to execute AED script
   if ! alias | grep -qw 'aed='; then
     echo -e "\n$green \bCreating alias..."
-    echo "'alias aed='~/aed/app/aed.sh'" >> $HOME/bash_profile \
-      && echo -e "\n$blue $icon_pass" || return
-    . $HOME/.bash_profile # source shell to load alias
+    echo "'alias aed='~/aed/app/aed.sh'" >> $HOME/bash_profile
+    return_check
+    . $HOME/.bash_profile  # source shell to load alias
   fi
 }
 
@@ -60,8 +64,8 @@ update_config() {
     # loop through arguments
     for i in "$@"; do
       echo -e "\n$green \bUpdating $i: value: ${!i}..."
-      sed -i '' "s/$i=.*/$i=\"${!i}\"/" $aed_app/config.sh \
-        && echo -e "\n$blue $icon_pass $green" || return
+      sed -i '' "s/$i=.*/$i=\"${!i}\"/" $aed_app/config.sh
+      return_check
     done
     echo $reset
   else
