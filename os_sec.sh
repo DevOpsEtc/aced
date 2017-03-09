@@ -4,7 +4,7 @@
 ##  filename:   os_sec.sh                         ##
 ##  path:       ~/src/deploy/cloud/aws/           ##
 ##  purpose:    Server Security Hardening         ##
-##  date:       03/02/2017                        ##
+##  date:       03/08/2017                        ##
 ##  repo:       https://github.com/DevOpsEtc/aed  ##
 ##  clone path: ~/aed/app/                        ##
 ####################################################
@@ -26,7 +26,7 @@
 # MaxAuthTries 1          :max login attempts
 # MaxSessions 2           :max simultaneous connections
 
-echo -e "\n$aed_grn \bLocking down ssh config..."
+echo -e "\n$green \bLocking down ssh config..."
 ssh aws "sudo sed -i \
   -e 's/Port 22/Port 222/' \
   -e 's/LogLevel INFO/LogLevel VERBOSE/' \
@@ -35,7 +35,7 @@ ssh aws "sudo sed -i \
   -e 's/UsePAM yes/UsePAM no/' \
   -e '$ a\ClientAliveInterval 300' \
   -e '$ a\ClientAliveCountMax 0' \
-  -e '$ a\AllowUsers $aed_os_user ubuntu' \
+  -e '$ a\AllowUsers $os_user ubuntu' \
   -e '$ a\DebianBanner no' \
   -e '$ a\MaxAuthTries 1' \
   -e '$ a\MaxSessions 2' \
@@ -43,29 +43,29 @@ ssh aws "sudo sed -i \
 	/etc/ssh/sshd_config"
 
 # restart ssh service
-echo -e "\n$aed_grn \bRestarting ssh daemon..."
+echo -e "\n$green \bRestarting ssh daemon..."
 ssh aws 'sudo service ssh restart'
 
 #############################################################
 #### update ssh connection alias ############################
 #############################################################
 
-echo -e "\n$aed_grn \bUpdating localhost SSH connection alias..."
+echo -e "\n$green \bUpdating localhost SSH connection alias..."
 sed -i \
-  -e "s/User ubuntu/User $aed_os_user/" \
+  -e "s/User ubuntu/User $os_user/" \
   -e 's/Port 22/Port 222/' \
-  $aed_ssh_cfg
+  $ssh_config/config
 
 #############################################################
 ####  lock down users  ######################################
 #############################################################
 
 # lock root account; unlock: su - && passwd
-echo -e "\n$aed_grn \bLocking root account..."
+echo -e "\n$green \bLocking root account..."
 sudo passwd -l root
 
 # lock default ubuntu account; unlock: passwd -u ubuntu
-echo -e "\n$aed_grn \bLocking ubuntu account..."
+echo -e "\n$green \bLocking ubuntu account..."
 sudo passwd -l ubuntu
 
 
