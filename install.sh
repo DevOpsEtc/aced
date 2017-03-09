@@ -4,63 +4,54 @@
 ##  filename:   install.sh                                     ##
 ##  path:       ~/src/deploy/cloud/aws/                        ##
 ##  purpose:    create file structure & confirm prerequisites  ##
-##  date:       03/03/2017                                     ##
+##  date:       03/08/2017                                     ##
 ##  repo:       https://github.com/DevOpsEtc/aed               ##
 ##  clone path: ~/aed/app/                                     ##
 #################################################################
 
-aed_install() {
+install() {
   clear
-  aed_version # invoke function: AED release info
-  echo -e "$aed_wht
+  version # invoke function: AED release info
+  echo -e "$white
   \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
   \b\bXXXXXXXX  AED Install Tasks  XXXXXXXXXXXX
-  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n$aed_ylw"
+  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n$yellow"
 
-  read -rp "Do you have a free acount at AWS yet? [Y/N] " aed_opt
+  read -rp "Do you have a free acount at AWS yet? [Y/N] " response
 
-  if [[ "$aed_opt" =~ ^([nN][oO]|[nN])+$ ]]; then
-    echo -e "\n$aed_grn \bOpening AWS website to free tier page... \n$aed_ylw"
+  if [[ "$response" =~ ^([nN][oO]|[nN])+$ ]]; then
+    echo -e "\n$green \bOpening AWS website to free tier page... \n$yellow"
     open https://aws.amazon.com/free/
     read -p "Create account, then press enter key to continue"
   fi
 
-  echo -e "\n$aed_grn \bLooking for the aws-cli app..."
+  echo -e "\n$green \bLooking for the aws-cli app..."
   # check for aws-cli app; eat stout; notify if not found
   if ! type aws &>/dev/null; then
-    echo -e "\n$aed_ylw \baws-cli app not found! $aed_ylw"
+    echo -e "\n$yellow \baws-cli app not found! $yellow"
     open http://docs.aws.amazon.com/cli/latest/userguide/cli-install-macos.html
     read -p "Install aws-cli, then press enter key to continue"
   else
-    echo -e "\n$aed_blu $aed_ok_icon $aed_ylw"
+    echo -e "\n$blue $icon_pass $yellow"
   fi
 
   # create file structure & list results
-  echo -e "\n$aed_grn \bCreating file structure..."
+  echo -e "\n$green \bCreating file structure..."
   mkdir -p $aed_root/{config/{aws,keys},data} \
-    && echo -e "\n$aed_blu $aed_ok_icon" || return
-  echo -e "$aed_blu"; find $aed_root -type d -maxdepth 2
+    && echo -e "\n$blue $icon_pass" || return
+  echo -e "$blue"; find $aed_root -type d -maxdepth 2
 
-
-
-
-
-
-  # check for/create alias that sources AED
-  if alias | grep -qw 'aed='; then
-    unalias aed
-    echo -e "\n$aed_grn \bCreating alias..."
-    alias aed='. ~/aed/app/aed.sh' \
-      && echo -e "\n$aed_blu $aed_ok_icon" || return
+  # check for/create alias to execute AED script
+  if ! alias | grep -qw 'aed='; then
+    echo -e "\n$green \bCreating alias..."
+    echo "'alias aed='~/aed/app/aed.sh'" >> $HOME/bash_profile \
+      && echo -e "\n$blue $icon_pass" || return
+    . $HOME/.bash_profile # source shell to load alias
   fi
-
-
-
-
 }
 
-aed_update_config() {
-  echo -e "$aed_wht
+update_config() {
+  echo -e "$white
   \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
   \b\bXXXXXXXX  Update AED Config  XXXXXXXXXXXX
   \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
@@ -68,73 +59,76 @@ aed_update_config() {
   if [ "$#" -gt 0 ]; then
     # loop through arguments
     for i in "$@"; do
-      echo -e "\n$aed_grn \bUpdating $i: value: ${!i}..."
+      echo -e "\n$green \bUpdating $i: value: ${!i}..."
       sed -i '' "s/$i=.*/$i=\"${!i}\"/" $aed_app/config.sh \
-        && echo -e "\n$aed_blu $aed_ok_icon $aed_grn" || return
+        && echo -e "\n$blue $icon_pass $green" || return
     done
-    echo $aed_rst
+    echo $reset
   else
-    echo -e "\n$aed_red \bNo arguments supplied! $aed_rst"
+    echo -e "\n$red \bNo arguments supplied! $reset"
     return
   fi
 }
 
-aed_uninstall() {
-  echo -e "\n$aed_wht
+uninstall() {
+  echo -e "\n$white
   \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
   \b\bXXXXXXXX  AED Uninstall  XXXXXXXXXXXXXXXX
   \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 
-  echo $aed_ylw; read -rp "Really uninstall AED? [Y/N] " aed_opt
+  echo $yellow; read -rp "Really uninstall AED? [Y/N] " response
 
-  if [[ "$aed_opt" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
-    echo -e "\n$aed_grn \bRemoving AED shell functions..."
-    aed_rmFun=$(declare -F | awk '/\ aed_/ {print $3}')
-    unset -f $aed_rmFun
+  if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
+    # echo -e "\n$green \bRemoving AED shell functions..."
+    # rmFun=$(declare -F | awk '/\ / {print $3}')
+    # unset -f $rmFun
+    #
+    # echo -e "\n$green \bRemoving AED shell variables..."
+    # rmVar=$(set | awk '/^/ {sub(/=.*/,""); print}')
+    # unset $rmVar rmVar
 
-    echo -e "\n$aed_grn \bRemoving AED shell variables..."
-    aed_rmVar=$(set | awk '/^aed_/ {sub(/=.*/,""); print}')
-    unset $aed_rmVar aed_rmVar
+    # echo -e "\n$green \bRemoving alias..."
+    # unalias aed
 
-    echo -e "\n$aed_grn \bRemoving alias..."
-    unalias aed
+    # echo -e "\n$green \bRemoving AED app directory..."
+    # rm -rf $aed_app
 
-    echo -e "\n$aed_grn \bRemoving AED app directory..."
-    rm -rf $aed_app
 
-    echo $aed_ylw; read -rp "Remove AED bin directory? [Y/N] " aed_opt
+    # To Do: sed kill alias in bash_profile
 
-    if [[ "$aed_opt" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
-      echo -e "\n$aed_grn \bRemoving AED bin directory..."
+    echo $yellow; read -rp "Remove AED bin directory? [Y/N] " response
+
+    if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
+      echo -e "\n$green \bRemoving AED bin directory..."
       rm -rf $aed_bin
     fi
 
-    echo $aed_ylw; read -rp "Remove AED config directory? [Y/N] " aed_opt
+    echo $yellow; read -rp "Remove AED config directory? [Y/N] " response
 
-    if [[ "$aed_opt" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
-      echo -e "\n$aed_grn \bRemoving AED config directory..."
+    if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
+      echo -e "\n$green \bRemoving AED config directory..."
       rm -rf $aed_config
     fi
 
-    echo $aed_ylw; read -rp "Remove AED data directory & repo? [Y/N] " aed_opt
+    echo $yellow; read -rp "Remove AED data directory & repo? [Y/N] " response
 
-    if [[ "$aed_opt" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
-      echo -e "\n$aed_grn \bRemoving AED data directory..."
+    if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
+      echo -e "\n$green \bRemoving AED data directory..."
       rm -rf $aed_data
     fi
 
-    echo -e "\n$aed_grn \bRemoving symlinks to AWS configuration..."
-    rm -rf $aed_aws_dotfile
+    echo -e "\n$green \bRemoving symlinks to AWS configuration..."
+    rm -rf ~/.aws
 
-    echo -e "\n$aed_grn \bRemoving ssh connection alias..."
-    sed -i '' "/^Host $aed_ssh_alias$/{N;N;N;N;N;d;}" $aed_ssh_cfg
+    echo -e "\n$green \bRemoving ssh connection alias..."
+    sed -i '' "/^Host $ssh_alias$/{N;N;N;N;N;d;}" $ssh_config/config
 
-    echo -e "\n$aed_ylw \bAED was removed from localhost, but AWS IAM \
+    echo -e "\n$yellow \bAED was removed from localhost, but AWS IAM \
     \b\bgroup/user/access keys, EIP, EC2 instance, keypair, security \
     \b\bgroups/rules remain."
 
     # invoke function to display logo & version
-    aed_version
-    echo -e "\n$aed_blu \bThanks for trying AED!"
+    version
+    echo -e "\n$blue \bThanks for trying AED!"
   fi
-} # end function: aed_uninstall
+} # end function: uninstall

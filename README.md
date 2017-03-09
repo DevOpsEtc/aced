@@ -48,11 +48,11 @@ Designed for lazy people by a lazy person. Don't build your web server by hand a
     https://github.com/DevOpsEtc/bin/blob/master/key_pair.sh
 
 **Installing AED:** <br>
-1. clone deploy repo <br>
+1. Clone deploy repo <br>
 `$ git clone https://github.com/DevOpsEtc/aed ~/aed/app`
 
-2. source AED app <br>
-`$ . ~/aed/app/aed.sh`
+2. Run AED app <br>
+`$ ~/aed/app/aed.sh`
 
 **Getting Started:** <br>
 
