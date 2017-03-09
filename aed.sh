@@ -135,13 +135,26 @@ tasks() {
         "QUIT")
           return ;;
         *)
-          echo -e "$yellow \nMust Enter Number: 1-${#task_option[@]} \
-            $green\n"
+          echo -e "$yellow \nMust Enter Number: 1-${#task_option[@]} $green\n"
           break ;;
       esac
     done # end select menu
   done # end of menu loop
 } # end function: tasks
+
+return_check() {
+  ##########################################################
+  ####  Error Handling  ####################################
+  ##########################################################
+
+  # if prior command failed, then exit AED
+  if [ $? -eq 0 ]; then
+    echo -e "\n$blue $icon_pass"
+  else
+    echo -e "\n$red $icon_fail"
+    exit 0
+  fi
+}
 
 main() {
   ############################################################
@@ -196,7 +209,6 @@ main() {
   fi
 } # end function: main
 
-# invoke main AED function & ingest any arguments as written
-main "$@"
+main "$@" # invoke main AED function; ingest any arguments as written
 
-exit 1
+exit 1  # exit without error

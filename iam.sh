@@ -44,8 +44,8 @@ iam_root_keys() {
   # configure aws-cli with credentials
   echo -e "\n$green \bCopy/paste AWS access keys (enter nothing for default \
   \b\bregion & output) \n$yellow"
-  aws configure && echo -e "\n$blue $icon_pass" || return
-
+  aws configure
+  return_check
 } # end function: iam_root_keys
 
 iam_group() {
@@ -102,8 +102,8 @@ iam_group() {
         fi
 
         echo -e "$green \bDeleting IAM group: $g..."
-        aws iam delete-group --group-name "$g" \
-        && echo -e "\n$blue $icon_pass" || return
+        aws iam delete-group --group-name "$g"
+        return_check
       done
 
       unset get_group
@@ -135,8 +135,8 @@ iam_group() {
   done
 
   echo -e "\n$green \bCreating $iam_group..."
-  echo $blue; aws iam create-group --group-name $iam_group \
-    && echo -e "\n$blue $icon_pass" || return
+  echo $blue; aws iam create-group --group-name $iam_group
+  return_check  #
 
   echo -e "$white
   \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -179,8 +179,9 @@ iam_group() {
           }
         ]
       }
-    ' \
-    && echo -e "\n$blue $icon_pass" || return
+<<<<<<< HEAD
+    '
+  return_check
 
   # invoke function to update placeholder values of passed args in AED config
   update_config iam_group iam_policy
@@ -226,8 +227,8 @@ iam_user() {
         fi
 
         echo -e "$green \bDeleting IAM user: $i..."
-        aws iam delete-user --user-name "$i" \
-          && echo -e "\n$blue $icon_pass" || return
+        aws iam delete-user --user-name "$i"
+        return_check
 
         # delete array
         unset get_user
@@ -259,14 +260,12 @@ iam_user() {
   done
 
   echo -e "\n$green \bCreating $iam_user... \n$blue"
-  aws iam create-user --user-name $iam_user \
-    && echo -e "\n$blue $icon_pass" || return
+  aws iam create-user --user-name $iam_user
+  return_check
 
   echo -e "\n$green \bAdding IAM user: $iam_user to $iam_group..."
-  aws iam add-user-to-group \
-    --user-name $iam_user \
-    --group-name $iam_group \
-    && echo -e "\n$blue $icon_pass" || return
+  aws iam add-user-to-group --user-name $iam_user --group-name $iam_group
+  return_check
 
   # invoke function to update placeholder values of passed args in AED config
   update_config iam_user
@@ -287,13 +286,13 @@ iam_user_keys() {
     gsub(/:/, "="); \
     gsub(/AccessKeyId/, "aws_access_key_id ", $1); \
     gsub(/SecretAccessKey/, "aws_secret_access_key ", $1); \
-    print $1,$2}' > $aws_crd_tmp \
-    && echo -e "\n$blue $icon_pass" || return
+    print $1,$2}' > $aed_aws/credentials_tmp
+  return_check
 
   # insert profile name to top of temp AWS credentials file
   sed -i '' '1i\
     [default]\
-    ' $aws_crd_tmp
+    ' $aed_aws/credentials_tmp
 
   # delete AWS config file, recreate, change permissions & insert values
   echo -e "\n$green \bCreating Localhost AWS configuration..."
@@ -324,8 +323,8 @@ iam_root_keys_rm() {
     # loop through list of access key IDs
     for k in "${get_root_keys[@]}"; do
       echo -e "\n$green \bRemoving access key ID: $k from root..."
-      aws iam delete-access-key --access-key $k \
-      && echo -e "\n$blue $icon_pass" || return
+      aws iam delete-access-key --access-key $k
+      return_check
     done
   fi
 }
@@ -337,21 +336,19 @@ aws_config() {
   \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 
   # backup any existing AWS config
-  if [ -d $aws_dot ]; then
-    mv -f $aws_dot/* $aws_dot_bk &>/dev/null
+  if [ -d $aws_config ]; then
+    mv -f $aws_config/* $aed_aws &>/dev/null
     echo -e "\n$yellow \bExisting AWS dotfiles found and saved to: "
-    echo $blue; find $aws_dot_bk
+    echo $blue; find $aed_aws
   fi
 
   # overwrite localhost AWS credentials file
-  echo -e "\n$green \bUpdating AWS credentials for: $iam_user...\n
-    $blue"
-  mv -f $aws_crd_tmp $aws_crd \
-    && echo -e "\n$blue $icon_pass" || return
+  echo -e "\n$green \bUpdating AWS credentials for: $iam_user...\n $blue"
+  mv -f $aed_aws/credentials_tmp $aed_aws/credentials
+  return_check
 
   # symlink AWS config & credentials files to default location
   echo -e "\n$green \bCreating AWS dotfile symlinks... \n$blue"
-  ln -sf $aws_cfg $aws_dot \
-    && ln -sf $aws_crd $aws_dot \
-    && echo -e "\n$blue $icon_pass" || return
+  ln -sf $aws_cfg $aws_config && ln -sf $aws_crd $aws_config
+  return_check
 }
