@@ -4,7 +4,7 @@
 ##  filename:   install.sh                                     ##
 ##  path:       ~/src/deploy/cloud/aws/                        ##
 ##  purpose:    create file structure & confirm prerequisites  ##
-##  date:       03/08/2017                                     ##
+##  date:       03/10/2017                                     ##
 ##  repo:       https://github.com/DevOpsEtc/aed               ##
 ##  clone path: ~/aed/app/                                     ##
 #################################################################
@@ -14,10 +14,10 @@ install() {
   version # invoke function: AED release info
   echo -e "$white
   \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-  \b\bXXXXXXXX  AED Install Tasks  XXXXXXXXXXXX
+  \b\bXXXXXXXX  AED Install  XXXXXXXXXXXXXXXXXX
   \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n$yellow"
 
-  read -rp "Do you have a free acount at AWS yet? [Y/N] " response
+  read -rp "Do you have a free account at AWS yet? [Y/N] " response
 
   if [[ "$response" =~ ^([nN][oO]|[nN])+$ ]]; then
     echo -e "\n$green \bOpening AWS website to free tier page... \n$yellow"
@@ -37,7 +37,7 @@ install() {
 
   # create file structure & list results
   echo -e "\n$green \bCreating file structure..."
-  mkdir -p $aed_root/{config/{aws,keys},data}
+  mkdir -p $aed_root/{config/{aws/old,keys},data}
 
   # invoke function to check status code of last command
   return_check
@@ -46,11 +46,11 @@ install() {
   echo -e "$blue"; find $aed_root -type d -maxdepth 2
 
   # check for/create alias to execute AED script
-  if ! alias | grep -qw 'aed='; then
-    echo -e "\n$green \bCreating alias..."
-    echo "'alias aed='~/aed/app/aed.sh'" >> $HOME/bash_profile
+
+  if ! alias aed 2>/dev/null; then
+    echo -e "\n$green \bCreating permanent alias: $ssh_alias"
+    echo "alias aed='~/aed/app/aed.sh'" >> $HOME/.bash_profile
     return_check
-    . $HOME/.bash_profile  # source shell to load alias
   fi
 }
 

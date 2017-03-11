@@ -4,7 +4,7 @@
 ##  filename:   ec2_sec.sh                        ##
 ##  path:       ~/src/deploy/cloud/aws/           ##
 ##  purpose:    EC2 security tasks                ##
-##  date:       03/08/2017                        ##
+##  date:       03/10/2017                        ##
 ##  repo:       https://github.com/DevOpsEtc/aed  ##
 ##  clone path: ~/aed/app/                        ##
 ####################################################
@@ -15,7 +15,7 @@ ec2_sec() {
   ec2_sec_rules
 }
 
-ec2_rotate_keys() {
+ec2_keypair_rotate() {
   ec2_sec_keypair
 }
 
@@ -26,7 +26,7 @@ ec2_sec_keypair() {
   \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 
   # populate array with localhost key-pair names
-  get_kp_local=($(ls "$keys"))
+  get_kp_local=($(ls "$aed_keys"))
 
   # populate array with localhost private key names
   get_prv_local=($(ls | grep -v  "\."))
@@ -94,42 +94,42 @@ ec2_sec_keypair() {
   \b\bXX  Create New Localhost Key Pair  XXXXXX
   \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 
-  unset ec2_key_name ec2_key # delete key pair var
+  # unset ec2_key_name ec2_key # delete key pair var
 
-  while [ "$ec2_key_name" != "valid" ] ; do
-    echo $yellow
-    read -rp "Enter name for new key pair, e.g. name_keypair: " \
-      ec2_key
-
-    # name for public key; append ".pub" to value
-    ec2_key_pub=$ec2_key.pub
-
-    # does the EC2 key pair exist
-    if echo "${get_key_pair[@]}" | grep -q -w "$ec2_key.pub"; then
-      echo -e "\n$red \bEC2 key pair already exists: $ec2_key"
-    else
-      ec2_key_name=valid
-    fi
-  done
+  # while [ "$ec2_key_name" != "valid" ] ; do
+  #   echo $yellow
+  #   read -rp "Enter name for new key pair, e.g. name_keypair: " \
+  #     ec2_key
+  #
+  #   # name for public key; append ".pub" to value
+  #   ec2_key_pub=$ec2_key.pub
+  #
+  #   # does the EC2 key pair exist
+  #   if echo "${get_key_pair[@]}" | grep -q -w "$ec2_key.pub"; then
+  #     echo -e "\n$red \bEC2 key pair already exists: $ec2_key"
+  #   else
+  #     ec2_key_name=valid
+  #   fi
+  # done
 
   echo -e "\n$yellow \bYou will now be prompted to enter a passphrase twice. \
   \b\bStore passphrase in a secure location!"
 
-  echo -e "\n$green \bCreating key pair: $ec2_key... \n$blue"
-  ssh-keygen -t rsa -b 4096 -f $keys/$ec2_key -C "$ec2_key"
+  echo -e "\n$green \bCreating key pair: $ssh_keypair... \n$blue"
+  ssh-keygen -t rsa -b 4096 -f $aed_keys/$ssh_keypair -C "$ssh_keypair"
   return_check
 
-  echo -e "\n$green \bSetting file permissions on keypair: \
-  \b\b$ec2_key... \n$blue"
-  chmod =,u+r $keys/$key_name && chmod =,u+rw $keys/$key_name_pub
+  echo -e "\n$green \bSetting file permissions on $ssh_keypair \
+  \b\b\b($ssh_keypair: 400 & $ssh_keypair.pub: 644) ... \n$blue"
+  chmod =,u+r $aed_keys/* && chmod =,u+rw,go=r $aed_keys/$key_name_pub
   return_check
 
   echo -e "\n$green \bCreating symlink to private key... \n$blue"
-  ln -sf $keys/$ec2_key $ssh_config
+  ln -sf $aed_keys/$ec2_key $ssh_config
   return_check
 
   echo -e "\n$green \bAdding private key to SSH agent... \n$blue"
-  /usr/bin/ssh-add -K $keys/$ec2_key
+  /usr/bin/ssh-add -K $aed_keys/$ec2_key
   return_check
 
   echo -e "$white
@@ -140,7 +140,7 @@ ec2_sec_keypair() {
   echo -e "\n$green \bImporting public key... \n$reset"
   aws ec2 import-key-pair \
   --key-name $key_name_pub \
-  --public-key-material file://$keys/$key_name_pub
+  --public-key-material file://$aed_keys/$key_name_pub
   return_check
 
   # invoke function to update placeholder values of passed args in AED config
@@ -150,7 +150,7 @@ ec2_sec_keypair() {
 ec2_sec_group() {
   echo -e "$white
   \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-  \b\bXX  Check EC2 Security Group  XXXXXXXXXXX
+  \b\bXX  EC2: Security Group Creation  XXXXXXX
   \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 
   # populate array with EC2 security group names (ignore default)
@@ -158,62 +158,33 @@ ec2_sec_group() {
     --query 'SecurityGroups[*].{Name:GroupName}' \
     --output text \
     | grep -v "default")
-  )
+    )
 
-    if [ ${#get_ec2_group[@]} -ne 0 ]; then
-      echo -e "\n$yellow \bFound EC2 security group(s): "
-      echo $blue; printf '%s\n' "${get_ec2_group[@]} $yellow"
-      read -rp "Delete all EC2 security group(s)? [Y/N] " response
-      echo
+  if [ ${#get_ec2_group[@]} -ne 0 ]; then
+    echo -e "\n$yellow \bFound EC2 security group(s): "
+    echo $blue; printf '%s\n' "${get_ec2_group[@]} $yellow"
+    read -rp "Delete all EC2 security group(s)? [Y/N] " response
+    echo
 
-      if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
-        # loop through list of EC2 group names
-        for g in "${get_ec2_group[@]}"; do
-          echo -e "\n$green \bDeleting security group..."
-          aws ec2 delete-security-group --group-name "$g"
-          return_check
-        done
-
-        unset get_ec2_group
-      else
-        echo -e "\n$green \bKeeping EC2 security group(s)!"
-      fi
+    if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
+      # loop through list of EC2 group names
+      for g in "${get_ec2_group[@]}"; do
+        echo -e "\n$green \bDeleting security group..."
+        aws ec2 delete-security-group --group-name "$g"
+        return_check
+      done
     else
-      echo -e "\n$yellow \bNo EC2 security group found!"
+      echo -e "\n$green \bKeeping EC2 security group(s)!"
     fi
-
-  echo -e "$white
-  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-  \b\bXX  Create EC2 Security Group  XXXXXXXXXX
-  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-
-  unset ec2_group_name ec2_group sec_group_desc # delete group vars
-
-  while [ "$ec2_group_name" != "valid" ] ; do
-    echo $yellow
-    read -rp "Enter name for new EC2 security group, e.g. name_group: " \
-      ec2_group
-
-    # check for existing EC2 group name
-    if echo "${get_ec2_group[@]}" | grep -q -w "$ec2_group"; then
-      echo -e "\n$red \bEC2 security group already exists: $ec2_group"
-    else
-      ec2_group_name=valid
-    fi
-  done
-
-  echo $yellow
-  read -rp 'Enter security group description, e.g. Blog security group: ' \
-    sec_group_desc
+  else
+    echo -e "\n$yellow \bNo EC2 security group found!"
+  fi
 
   echo -e "\n$green \bCreating $ec2_group..."
   echo $blue; aws ec2 create-security-group \
     --group-name $ec2_group \
-    --description "$sec_group_desc"
-  return_check    
-
-  # invoke function to update placeholder values of passed args in AED config
-  update_config ec2_group
+    --description "$ec2_group_desc"
+  return_check
 }
 
 ec2_sec_rules() {
@@ -234,13 +205,6 @@ ec2_sec_rules() {
 # clear entry
 # temp_access_ip
 
-# anywhere (0.0.0.0/0, ::/0)
-# my ISP (netmask 24)
-# my IP (netmask 32)
-
-
-
-
   # check for security group rules; do if found
   echo -e "\n$green \bChecking existing EC2 security group rules... $reset"
   if $(aws ec2 describe-security-groups \
@@ -252,23 +216,9 @@ ec2_sec_rules() {
     aws ec2 describe-key-pairs --output table
   fi
 
-
-
-
   # add EC2 security group ingress rule
-  aws ec2 authorize-security-group-ingress --group-name $sec_group \
-    --protocol tcp --port $sec_rule_port --cidr $ip_cidr
-
-
-
-  # prompt for custom ssh access port
-  read -rp $'\n\nEnter custom port for remote access, e.g. 1337: ' \
-    sec_rule_port
-
-# separate function for -secRule
-    # cidr vs. my IP
-  # prompt for cidr format
-  read -rp $'\n\nEnter ISP IP, e.g. 1337: ' ip_cidr
+  aws ec2 authorize-security-group-ingress --group-name $ec2_group \
+    --protocol tcp --port $ec2_ssh_port --cidr $ec2_access_ip_hm
 
 
   # create security group rules
@@ -277,17 +227,17 @@ ec2_sec_rules() {
   # narrow to subnet
   # temp access via unknown ISP: add new rule @web console:
   # custom rule: tcp: port: : myIP
-  $ aws ec2 authorize-security-group-ingress --group-name $sec_group \
-    --protocol tcp --port $sec_rule_port --cidr $ip_cidr
+  $ aws ec2 authorize-security-group-ingress --group-name $ec2_group \
+    --protocol tcp --port $ec2_ssh_port --cidr $ec2_access_ip
     # 50.170.168.0/24
 
   # view security group rules
-  $ aws ec2 describe-security-groups --group-name $sec_group
+  $ aws ec2 describe-security-groups --group-name $ec2_group
 
   # remove security group rule
   $ aws ec2 revoke-security-group-ingress \
-    --group-name $sec_group \
+    --group-name $ec2_group \
     --protocol tcp \
-    --port $sec_rule_port \
-    --cidr $ip_cidr
+    --port $ec2_ssh_port \
+    --cidr $ec2_access_ip
 }
