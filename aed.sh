@@ -156,6 +156,25 @@ return_check() {
   fi
 }
 
+show_active() {
+  ##########################################################
+  ####  Display visual cue for longer running processes  ###
+  ####  e.g. $ sleep 10 & show_active                    ###
+  ##########################################################
+
+  pid=$!            # fetch last process ID
+  frames='◓◑◒◐'  # animation frames
+  i=0               # frame cycle count
+  tput civis        # hide cursor; unhide: tput cnorm
+  echo
+  while [ $(ps -eo pid | grep $pid) ]; do
+    i=$(( (i+1) %4 ))
+    printf "\b${green}${frames:$i:1}"
+    sleep .1
+  done
+  tput cnorm
+}
+
 main() {
   ############################################################
   ####  Main AED function: install & run  ####################
