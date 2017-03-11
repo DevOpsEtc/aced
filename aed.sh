@@ -4,7 +4,7 @@
 ##  filename:   aed.sh                                    ##
 ##  path:       ~/src/deploy/cloud/aws/                   ##
 ##  purpose:    run AED: Automated EC2 Deploy             ##
-##  date:       03/08/2017                                ##
+##  date:       03/10/2017                                ##
 ##  symlink:    $ ln -s ~/src/deploy/cloud/aws ~/aed/app  ##
 ##  repo:       https://github.com/DevOpsEtc/aed          ##
 ##  clone path: ~/aed/app/                                ##
@@ -19,7 +19,7 @@ version() {
   ####  Display logo/version pre-rendered figlet  ##########
   ##########################################################
 
-  echo -e "\n$blue
+  echo -e "$blue
         _    _____ ____
        / \  | ____|  _ \\
       / _ \ |  _| | | | |
@@ -109,12 +109,12 @@ tasks() {
     select t in "${task_option[@]}"; do
       case $t in
         "IAM: Rotate Access Keys")
-          iam_user_keys
+          iam_keys_rotate
           break ;;
         "EIP: Rotate IP Address")
           break ;;
         "EC2: Rotate Key Pair")
-          ec2_rotate_keys
+          ec2_keypair_rotate
           break ;;
         "EC2: Add Remote Access Rule")
           break ;;
@@ -144,7 +144,7 @@ tasks() {
 
 return_check() {
   ##########################################################
-  ####  Error Handling  ####################################
+  ####  Check status code of last command  #################
   ##########################################################
 
   # if prior command failed, then exit AED
@@ -152,7 +152,7 @@ return_check() {
     echo -e "\n$blue $icon_pass"
   else
     echo -e "\n$red $icon_fail"
-    exit 0
+    exit 1
   fi
 }
 
@@ -161,54 +161,56 @@ main() {
   ####  Main AED function: install & run  ####################
   ############################################################
 
-  # check if running script from mac; exit if not
-  if [ "$(uname)" == "Darwin" ]; then
-    # source scripts
-    . ./config.sh     # AED config
-    . ./install.sh    # AED install/uninstall
-    . ./iam.sh        # AWS IAM security tasks
-    . ./ec2_sec.sh    # AWS EC2 security tasks
-    . ./ec2.sh        # AWS EC2 instance tasks
-    # . ./os_sec.sh     # OS hardening tasks
-    # . ./os_app.sh     # OS app tasks
-    # . ./data.sh       # OS app tasks
+  # bail out if not run from MacOS
+  [[ $(uname) == "Darwin" ]] || { echo -e "\nAED is for MacOS!"; exit 1; }
 
-    # invoke install functions if AED not installed
-    if [ "$aed_install" == true ]; then
-      install         # AED install
-      iam             # AWS IAM tasks
-      ec2_sec         # AWS EC2 security tasks
-      ec2             # AWS EC2 instance tasks
-      # os_sec          # Ubuntu server hardening tasks
-      # os_app          # Ubuntu server app tasks
-      sed -i '' '/installed=/ s/false/true /' $aed_app/config.sh
-      echo -e "\n$blue \bAED Installed! \n\nEnter $ aed or $ aed -h"
-    fi
+  # set path of AED scripts
+  cd "$(dirname $0)" || exit 1
 
-    # strip off any prefixed hypen from passed argument
-    option=${1/-/}
+  # source scripts
+  . ./config.sh     # AED config
+  . ./install.sh    # AED install/uninstall
+  . ./iam.sh        # AWS IAM security tasks
+  . ./ec2_sec.sh    # AWS EC2 security tasks
+  . ./ec2.sh        # AWS EC2 instance tasks
+  # . ./os_sec.sh     # OS hardening tasks
+  # . ./os_app.sh     # OS app tasks
+  # . ./data.sh       # OS app tasks
 
-    # AED parameter conditionals
-    case $option in
-      c|connect     ) ssh aed    ;; # EC2 remote access connect
-      ip            ) eip        ;; # EC2 rotate public IP
-      on|start      ) ec2_start  ;; # EC2 instance start
-      off|stop      ) ec2_stop   ;; # EC2 instance stop
-      r|rule        ) ec2_rule   ;; # EC2 remote access ingress rules
-      rb|reboot     ) ec2_reboot ;; # EC2 instance reboot
-      s|status      ) ec2_status ;; # EC2 instance status
-      sec|security  ) ec2_sec    ;; # EC2 keys, group, & rule tasks
-      u|uninstall   ) uninstall  ;; # AED uninstall
-      v|ver|version ) version    ;; # AED version information
-      \?|h\help     ) help       ;; # AED help
-      *             ) tasks      ;; # AED task menu; unknown arguments
-    esac
-  else
-    echo -e "\n$red \bOops, You're Not Running MacOS! $reset"
-    exit 0
+  # invoke install functions if AED not installed
+  if [ "$aed_installed" != true ]; then
+    install         # AED install
+    iam             # AWS IAM tasks
+    # ec2_sec         # AWS EC2 security tasks
+    # ec2             # AWS EC2 instance tasks
+    # os_sec          # Ubuntu server hardening tasks
+    # os_app          # Ubuntu server app tasks
+    # sed -i '' '/installed=/ s/false/true /' $aed_app/config.sh
+    . $HOME/.bash_profile  # source shell to load AED alias
+    # echo -e "\n$blue \bAED Installed! \n\nEnter $ aed or $ aed -h"
   fi
-} # end function: main
+
+  # strip off any prefixed hypen from passed argument
+  option=${1/-/}
+
+  # AED parameter conditionals
+  case $option in
+    c|connect     ) ssh aed    ;; # EC2 remote access connect
+    ip            ) eip        ;; # EC2 rotate public IP
+    on|start      ) ec2_start  ;; # EC2 instance start
+    off|stop      ) ec2_stop   ;; # EC2 instance stop
+    r|rule        ) ec2_rule   ;; # EC2 remote access ingress rules
+    rb|reboot     ) ec2_reboot ;; # EC2 instance reboot
+    s|status      ) ec2_status ;; # EC2 instance status
+    sec|security  ) ec2_sec    ;; # EC2 keys, group, & rule tasks
+    u|uninstall   ) uninstall  ;; # AED uninstall
+    v|ver|version ) version    ;; # AED version information
+    \?|h\help     ) help       ;; # AED help
+    *             ) tasks      ;; # AED task menu; unknown arguments
+  esac
+
+  # exit without error
+  exit 0
+}
 
 main "$@" # invoke main AED function; ingest any arguments as written
-
-exit 1  # exit without error
