@@ -4,13 +4,16 @@
 ##  filename:   iam.sh                            ##
 ##  path:       ~/src/deploy/cloud/aws/           ##
 ##  purpose:    IAM group, policy, user           ##
-##  date:       03/10/2017                        ##
+##  date:       03/11/2017                        ##
 ##  repo:       https://github.com/DevOpsEtc/aed  ##
 ##  clone path: ~/aed/app/                        ##
 ####################################################
 
 iam() {
-  iam_keys_root
+  iam_keys_create_root
+
+  exit 0 # break point
+
   iam_group_create
   iam_policy_create
   iam_user_create
@@ -24,18 +27,11 @@ iam_keys_rotate() {
   aws_config
 }
 
-iam_keys_root() {
+iam_keys_create_root() {
   echo -e "$white
   \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-  \b\bXX  IAM: Create Temporary Root Access Keys  XX
+  \b\bXX  IAM: Temporary Root Access Key Creation XX
   \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-
-  # backup any existing AWS config
-  if [ -d $aws_config ]; then
-    mv -f $aws_config/* $aed_aws/old &>/dev/null
-    echo -e "\n$yellow \bExisting AWS dotfiles found and saved to: "
-    echo $blue; find $aed_aws
-  fi
 
   echo -e "$gray
   1. Open https://console.aws.amazon.com/iam/home#/security_credential
@@ -44,17 +40,43 @@ iam_keys_root() {
   4. Expand \"Access Keys (Access Key ID and Secret Access Key)\"
   5. Delete an access key if needed (only two allowed)
   6. Click button \"Create New Access Key\"
-  7. Expand \"Show Access Key\" in modal"
+  7. Click button \"Download Key File\""
 
-  # wait 5 seconds before opening website in browser
-  sleep 3 && open https://console.aws.amazon.com/iam/home#/security_credential
+  echo -e "\n$white \bOpening browser in 4 seconds... \n$yellow"
+  sleep 4
+  open https://console.aws.amazon.com/iam/home#/security_credential
 
-  # configure aws-cli with credentials
-  echo -e "\n$gray \bCopy/paste AWS access keys (enter nothing for default \
-  \b\bregion & output) \n$yellow"
-  aws configure
+  read -p "After downloading key file, press enter key to continue"
+
+  echo -e "\n$green \bFinding key file..."
+  rootkey=$(find $HOME -name rootkey.csv -print -quit)
   return_check
-} # end function: iam_root_keys
+
+  echo -e "\n$green \bProcessing key file: Access Key ID..."
+  iam_key_id=$(awk '/AWSAccessKeyId/ \
+    {gsub(/AWSAccessKeyId=/, ""); print}' $rootkey)
+  return_check
+
+  echo -e "\n$green \bProcessing key file: Secret Access Key..."
+  iam_key_secret=$(awk '/AWSSecretKey/ \
+    {gsub(/AWSSecretKey=/, ""); print}' $rootkey)
+  return_check
+
+  echo -e "\n$green \baws configure: pushing extracted credentials..."
+  aws configure set aws_access_key_id $iam_key_id \
+    && aws configure set aws_secret_access_key $iam_key_secret
+  return_check
+
+  echo -e "\n$green \baws configure: pushing config..."
+  aws configure set default.region $aws_region \
+    && aws configure set default.output $aws_output
+  return_check
+
+  echo -e "\n$green \bDeleting localhost root key file..."
+  rm -f $rootkey
+  return_check
+
+} # end function: iam_keys_create_root
 
 iam_group_create() {
   echo -e "$white
