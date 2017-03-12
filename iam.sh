@@ -42,7 +42,7 @@ iam_keys_create_root() {
   6. Click button \"Create New Access Key\"
   7. Click button \"Download Key File\""
 
-  echo -e "\n$white \bOpening browser in 4 seconds... \n$yellow"
+  echo -e "\n$white \bOpening website in 4 seconds... \n$yellow"
   sleep 4
   open https://console.aws.amazon.com/iam/home#/security_credential
 

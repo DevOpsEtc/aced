@@ -20,9 +20,19 @@ install() {
   read -rp "Do you have a free account at AWS yet? [Y/N] " response
 
   if [[ "$response" =~ ^([nN][oO]|[nN])+$ ]]; then
-    echo -e "\n$green \bOpening AWS website to free tier page... \n$yellow"
-    open https://aws.amazon.com/free/
-    read -p "Create account, then press enter key to continue"
+
+    echo -e "$gray
+    1. Read the free-tier info: https://aws.amazon.com/free
+    2. Open https://console.aws.amazon.com/console/home
+    3. Choose \"Create an AWS Account\"
+    4. Will need valid email address and credit card
+    5. Validate your email address
+    "
+
+    echo -e "\n$white \bOpening website in 4 seconds... \n$yellow"
+    sleep 4
+    https://console.aws.amazon.com/console/home
+    read -p "After creating account, press enter key to continue"
   fi
 
   echo -e "\n$green \bLooking for the aws-cli app..."
@@ -30,7 +40,7 @@ install() {
   if ! type aws &>/dev/null; then
     echo -e "\n$yellow \baws-cli app not found! $yellow"
     open http://docs.aws.amazon.com/cli/latest/userguide/cli-install-macos.html
-    read -p "Install aws-cli, then press enter key to continue"
+    read -p "After installing aws-cli, press enter key to continue"
   else
     echo -e "\n$blue $icon_pass $yellow"
   fi
