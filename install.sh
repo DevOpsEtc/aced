@@ -25,8 +25,7 @@ install() {
     1. Read the free-tier info: https://aws.amazon.com/free
     2. Open https://console.aws.amazon.com/console/home
     3. Choose \"Create an AWS Account\"
-    4. Will need valid email address and credit card
-    5. Validate your email address
+    4. Account validation requires receiving a phone call and entering a pin
     "
 
     echo -e "\n$white \bOpening website in 4 seconds... \n$yellow"
