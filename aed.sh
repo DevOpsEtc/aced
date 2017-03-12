@@ -183,6 +183,9 @@ main() {
   # bail out if not run from MacOS
   [[ $(uname) == "Darwin" ]] || { echo -e "\nAED is for MacOS!"; exit 1; }
 
+  # set shell option enabling alias expansion for alias test; source aliases
+  shopt -s expand_aliases && . ~/.bash_profile
+
   # set path of AED scripts
   cd "$(dirname $0)" || exit 1
 

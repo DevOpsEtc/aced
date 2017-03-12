@@ -45,11 +45,9 @@ install() {
   # list new directories
   echo -e "$blue"; find $aed_root -type d -maxdepth 2
 
-  # check for/create alias to execute AED script
-
-  if ! alias aed 2>/dev/null; then
+  if ! alias aed > /dev/null; then
     echo -e "\n$green \bCreating permanent alias: $ssh_alias"
-    echo "alias aed='~/aed/app/aed.sh'" >> $HOME/.bash_profile
+    echo "alias aed='\$HOME/aed/app/aed.sh'" >> $HOME/.bash_profile
     return_check
   fi
 }
