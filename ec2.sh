@@ -9,57 +9,118 @@
 ##  clone path: ~/aed/app/                        ##
 ####################################################
 
-# eip             # check EIP; release; allocate; associate
-# ssh_alias        # create; update ssh connection alias
-# remote_user      # create new EC2 remote user
-
-ec2_temp() {
-  ##########################################################
-  ####  check for existing EC2 instances  ##################
-  ####  check for existing EIP address    ##################
-  ##########################################################
-
-  # get EC2 instance-id
-  ec2_id=$(aws ec2 describe-instance-status | grep InstanceId | \
-    awk '{gsub(/"/, ""); gsub(/,/,""); print $2}')
-
-  echo -e "\n$yellow \bEC2 Instance Found: $ec2_id \n $green"
+ec2() {
+  ec2_launch
+  ec2_ssh_alias
+  ec2_user_create
+  ec2_eip
+  ec2_ssh_alias
 }
+
+ec2_terminate() {
+  ############################################################
+  ####  Terminate EC2 instance using InstanceID parameter  ###
+  ############################################################
+
+  [ -z "$1" ] && echo -e "\n$yellow \bNo argument supplied!"; exit 1
+
+  echo -e "\n$green \bTerminating Instance: $1..."
+  aws ec2 terminate-instances --instance-ids "$1"
+  aws ec2 wait instance-terminated --instance-ids "$1" &
+  show_active
+}
+
 ec2_launch() {
   echo -e "$white
   \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
   \b\bXX  EC2: Instance Launch  XXXXXXXXXXXXXXX
   \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 
-  # launch instance; add security group; attach EBS volume for storage
-  echo -e "\n$green \bLaunching AWS EC2 Instance..."
+  echo -e "$green \bChecking for existing EC2 instances..."
+  ec2_instances=($(aws ec2 describe-instances \
+    --query 'Reservations[*].Instances[*].InstanceId' \
+    --output text)
+    )
+
+  if [ ${#ec2_instances[@]} -gt 0 ]; then
+    for i in "${ec2_instances[@]}"; do
+      echo -e "\n$yellow \bEC2 instance found: $i \n"
+
+      echo -e "\n$green \bChecking for tag name: $ec2_tag \n"
+      ec2_instance_tag=$(aws ec2 describe-instances \
+        --instance-ids $i \
+        --query 'Reservations[].Instances[].Tags[?Key==`Name`].Value' \
+        --output text)
+
+      if [ $ec2_instance_tag == "$ec2_tag" ]; then
+        echo -e "\n$yellow \bEC2 instance with tag: $ec2_tag found! \n"
+        ec2_terminate $i # invoke function to terminate; pass instance-id
+      else
+        echo -e "\n$yellow \bNo matching tag found! \n"
+      fi
+
+      read -rp "Should we still terminate the instance: $i? [Y/N] " response
+      if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
+        ec2_terminate $i
+      else
+        echo -e "\n$red \b***** Running multiple instances can push \
+        \b\b\b\b\b\b\b\bfree-tier account past monthly allowances! *****"
+      fi
+    done
+  else
+    echo -e "\n$yellow \bNo EC2 instances found!"
+  fi
+
+  echo -e "$green \bFetching latest AMI ID for Ubuntu Server 16.04 LTS..."
+  ami_id=$(aws ec2 describe-images \
+    --region $aws_region \
+    --owners $ec2_ami_owner \
+    --filters \
+      Name=virtualization-type,Values=hvm \
+      Name=root-device-type,Values=ebs \
+      Name=architecture,Values=x86_64 \
+      Name=name,Values=*hvm-ssd/ubuntu-$ec2_ami_name-$ec2_ami_ver* \
+    --query 'sort_by(Images, &Name)[-1].ImageId' \
+    --output text \
+    )
+
+  ami_name=$(aws ec2 describe-images --image-ids $ami_id \
+    --query "Images[*].Name" \
+    --output text)
+
+  echo -e "\n$blue \bLatest AMI: $ami_id \n$ami_name $reset"
+
+  echo -e "\n$green \bLaunching AWS EC2 Instance $ami_id..."
   ec2_id=$(aws ec2 run-instances \
-    --image-id $ec2_ami_id \
+    --image-id $ami_id \
     --count 1 \
     --instance-type t2.micro \
-    --key-name $ec2_key \
+    --key-name $ssh_key_public \
     --security-groups $ec2_group \
     --block-device-mappings "[{ \
     \"DeviceName\":\"/dev/sda1\",\"Ebs\":{\"VolumeSize\":30}}]" \
-    --output text --query 'Instances[*].InstanceId')
+    --query 'Instances[*].InstanceId' \
+    --output text
+    )
+  return_check
 
-  aws ec2 wait instance-running --instance-ids "$ec2_id"
+  aws ec2 wait instance-running --instance-ids "$ec2_id" & show_active
 
-  # add tags
-  aws ec2 create-tags --resources "$ec2_id" \
-    --tags Key=Name,Value="$ec2_tag"
+  echo -e "\n$green \bAdding name tag: $ec2_tag to $ec2_id..."
+  aws ec2 create-tags --resources "$ec2_id" --tags Key=Name,Value="$ec2_tag" &
+  show_active
 
-  # list new instance
-  aws ec2 describe-instances --instance-ids $ec2_id --output table
+  echo -e "\n$green \bStoring instance ID for future EC2 tasks..."
+  update_config ec2_id
 }
 
-ssh_alias() {
+ec2_ssh_alias() {
   echo -e "$white
   \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
   \b\bXX  SSH: Connection Alias Creation  XXXXX
   \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 
-  # get ID address
+  # get IP address
   ec2_ip=$(aws ec2 describe-instances \
     --instance-ids $ec2_id \
     --query 'Reservations[*].Instances[*].PublicIpAddress' \
@@ -73,7 +134,7 @@ ssh_alias() {
   return_check
 }
 
-remote_user() {
+ec2_user_create() {
   echo -e "$white
   \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
   \b\bXX  EC2: New User Creation  XXXXXXXXXXXXX
@@ -111,7 +172,7 @@ remote_user() {
     /home/$ec2_user/.ssh/authorized_keys; tput sgr0"
 }
 
-eip() {
+ec2_eip() {
   echo -e "$white
   \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
   \b\bXX  EIP: IP Address Obtain & Associate  XX
@@ -175,7 +236,7 @@ terminate(){
   \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
   \b\bXX  EC2: Instance Termination  XXXXXXXXXX
   \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-  
+
   echo -e $yellow ""
   read -rp "Terminate AWS EC2 Instance? [Y/N] " response
   if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]]; then

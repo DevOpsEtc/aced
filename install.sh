@@ -69,7 +69,6 @@ update_config() {
   \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
   # check for any arguments
   if [ "$#" -gt 0 ]; then
-    # loop through arguments
     for i in "$@"; do
       echo -e "\n$green \bUpdating $i: value: ${!i}..."
       sed -i '' "s/$i=.*/$i=\"${!i}\"/" $aed_app/config.sh
