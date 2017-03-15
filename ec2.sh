@@ -4,17 +4,21 @@
 ##  filename:   ec2.sh                            ##
 ##  path:       ~/src/deploy/cloud/aws/           ##
 ##  purpose:    launch instance & initial config  ##
-##  date:       03/10/2017                        ##
+##  date:       03/14/2017                        ##
 ##  repo:       https://github.com/DevOpsEtc/aed  ##
 ##  clone path: ~/aed/app/                        ##
 ####################################################
 
 ec2() {
-  ec2_launch
-  ec2_ssh_alias
-  ec2_user_create
-  ec2_eip
-  ec2_ssh_alias
+  ####################################################
+  ####  Invoke functions required for AED install  ###
+  ####################################################
+
+  ec2_launch        # check EC2 instances; grab AMI; launch new EC2 instance
+  ec2_eip_create    # check EIPs; allocate new EIP; associate EIP with EC2
+  ssh_alias_create  # create or update existing SSH connection alias
+  ec2_user_create   # check EC2 users; create new; assign to EC2 security group
+  ssh_alias_create  # run 2nd time to update changed values
 }
 
 ec2_terminate() {
@@ -104,34 +108,168 @@ ec2_launch() {
     )
   return_check
 
-  aws ec2 wait instance-running --instance-ids "$ec2_id" & show_active
+  aws ec2 wait instance-running --instance-ids "$ec2_id" &
+  show_active
 
   echo -e "\n$green \bAdding name tag: $ec2_tag to $ec2_id..."
   aws ec2 create-tags --resources "$ec2_id" --tags Key=Name,Value="$ec2_tag" &
   show_active
 
-  echo -e "\n$green \bStoring instance ID for future EC2 tasks..."
+  echo -e "\n$green \bPushing EC2 instance ID: $ec2_id => AED config... \n"
   update_config ec2_id
+  return_check
+
+  echo -e "\n$yellow \bReview EC2 instances in AWS web console:"
+  echo -e "\n$yellow \b$aws_con#Instances"
 }
 
-ec2_ssh_alias() {
+ec2_eip_create() {
+  echo -e "$white
+  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  \b\bXX  EC2: EIP Address Allocate & Associate  XX
+  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+
+  echo -e "\n$green \bChecking for existing EIPs..."
+  eips=($(aws ec2 describe-addresses \
+    --query Addresses[*].AllocationId \
+    --output text)
+    )
+
+  if [ ${#eips[@]} -gt 0 ]; then
+    for e in "${eips[@]}"; do
+      echo -e "\n$blue \bFound EIP: $e"
+
+      echo -e "\n$green \bChecking EIP's EC2 instance association..."
+      eip_instance_id=$(aws ec2 describe-addresses \
+      --allocation-ids $e \
+      --query Addresses[*].InstanceId \
+      --output text)
+
+      eip_assoc_id=$(aws ec2 describe-addresses \
+      --allocation-ids $e \
+      --query Addresses[*].AssociationId \
+      --output text)
+
+      if [ -n "$eip_instance_id" ]; then
+        echo -e "\n$blue \bAssociated with EC2 instance: $eip_instance_id"
+
+        echo -e "\n$green \bChecking for instance name: $ec2_tag..."
+        ec2_instance_tag=$(aws ec2 describe-instances \
+          --instance-ids $ec2_id \
+          --query 'Reservations[].Instances[].Tags[?Key==`Name`].Value' \
+          --output text)
+
+        if [ $ec2_instance_tag == "$ec2_tag" ]; then
+          echo -e "\n$blue \bInstance name matches: $ec2_tag"
+        else
+          echo -e "\n$yellow \bNo match, instance name: $ec2_instance_tag"
+          echo -e "\n$red \b*** AWS free-tier allows one free EIP ***\n$yellow"
+
+          read -rp "Want to disassociate & release EIP: $e? [Y/N] " response
+
+          if [[ "$response" =~ ^([nN][oO]|[nN])+$ ]]; then
+            eip_disassociate=false
+            eip_release=false
+          fi
+        fi
+
+        if [ "$eip_disassociate" != false ]; then
+          echo -e "\n$green \bDisassociating EIP from $ec2_tag..."
+          aws ec2 disassociate-address --association-id $eip_assoc_id
+          # return_check
+        else
+          echo -e "\n$yellow \bExisting EIP untouched!"
+        fi
+      else
+        echo -e "\n$yellow \bNo EC2 association found!"
+      fi
+
+      if [ "$eip_release" != false ]; then
+        echo -e "\n$green \bReleasing EIP..."
+        aws ec2 release-address --allocation-id $e
+        # return_check
+      fi
+    done
+  fi
+
+  echo -e "\n$green \bAllocating new EIP..."
+  eip_id=$(aws ec2 allocate-address \
+    --domain vpc \
+    --query AllocationId \
+    --output text
+    )
+  # return_check
+
+  echo -e "\n$green \bAssociating EIP with EC2 instance: $ec2_tag... \n"
+  aws ec2 associate-address \
+    --allocation-id $eip_id \
+    --instance-id $ec2_id \
+    --output table
+  # return_check
+
+  echo -e "\n$green \bGetting EC2 instance $ec2_tag's new public IP address..."
+  ec2_ip=$(aws ec2 describe-instances \
+    --instance-ids $ec2_id \
+    --query Reservations[*].Instances[*].PublicIpAddress \
+    --output text)
+  # return_check
+
+  echo -e "\n$green \bPushing EIP address: $ec2_ip => AED config... "
+  # update_config ec2_ip
+  # return_check
+
+  echo -e "\n$yellow \bYou can review EIP allocation in the AWS web console: \
+  \n$aws_con#Addresses $reset"
+}
+
+ssh_alias_create() {
   echo -e "$white
   \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
   \b\bXX  SSH: Connection Alias Creation  XXXXX
   \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 
-  # get IP address
-  ec2_ip=$(aws ec2 describe-instances \
-    --instance-ids $ec2_id \
-    --query 'Reservations[*].Instances[*].PublicIpAddress' \
-    --output text)
+  echo -e "\n$green \bChecking for existing SSH alias: $ssh_alias..."
+  if ! grep -wq "Host $ssh_alias" ~/.ssh/config; then
+    echo -e "\n$blue \bSSH connection alias not found: $ssh_alias"
+    echo -e "\n$green \bCreating SSH connection alias: $ec2_tag..."
 
-  # add ssh connection alias to ssh client config
-  echo -e "\n$green \bAdding ssh alias $ssh_alias..."
-  echo -e "\nHost $ssh_alias\n  HostName $eip_address\n  User \
-    $ec2_default_user\n  Port 22\n  IdentityFile ~/.ssh/$ssh_keypair" \
-    >> $ssh_config
+    echo -e "\n$green \bPushing SSH connection values to AED config..."
+    ssh_hostname=$ec2_ip
+    ssh_user=$ec2_user_def
+    ssh_port=$ec2_ssh_port_def
+    update_config ssh_hostname ssh_user ssh_port
+
+    echo -e " \
+    \n############### $ssh_alias ###############\
+    \nHost $ssh_alias \
+    \n  HostName $ssh_hostname \
+    \n  User $ssh_user \
+    \n  Port $ssh_port \
+    \n  IdentityFile ~/.ssh/$ssh_key_private \
+    \n############### $ssh_alias ###############" \
+    >> ~/.ssh/config
+    return_check
+  else
+    echo -e "\n$blue \bSSH connection alias found: $ssh_alias"
+    echo -e "\n$green \bUpdating SSH connection alias: $ssh_alias..."
+    sed -i '' \
+      -e "s/HostName $ssh_hostname/HostName $ec2_ip/" \
+      -e "s/User $ssh_user/User $ec2_user/" \
+      -e "s/Port $ssh_port/Port $ec2_ssh_port/" \
+      ~/.ssh/config
+
+    echo -e "\n$green \bPushing updated SSH connection values to AED config..."
+    ssh_hostname=$ec2_ip
+    ssh_user=$ec2_user
+    ssh_port=$ec2_ssh_port
+    update_config ssh_hostname ssh_user ssh_port
+  fi
+
+  echo -e "\n$green \bTesting SSH alias: $ssh_alias..."
+  ssh $ssh_alias "uname --all"
   return_check
+
+  echo -e "\n$yellow \bCan now connect to EC2 instance via \$ ssh $ssh_alias"
 }
 
 ec2_user_create() {
@@ -140,125 +278,31 @@ ec2_user_create() {
   \b\bXX  EC2: New User Creation  XXXXXXXXXXXXX
   \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 
-  # create new user with disabled login & no finger info
-  echo -e "\n$green \bCreating new user: $ec2_user..."
-  ssh aed "sudo adduser --disabled-login --gecos '' $ec2_user"
+  echo -e "\n$green \bCreating EC2 user: $ec2_user..."
+  ssh $ssh_alias "sudo adduser --disabled-login --gecos '' $ec2_user"
 
-  # set new user password
   echo -e "\n$green \bSetting new user password: $ec2_user..."
-  ssh aed "echo $ec2_user:$ec2_user_pass | sudo chpasswd"
+  ssh $ssh_alias "echo $ec2_user:$ec2_temp_pass | sudo chpasswd"
 
-  # add new user to sudo group, which has sudo permissions via /etc/sudoers
-  echo -e "\n$green \bAdd new user to sudo group for elevated privileges..."
-  ssh aed "sudo usermod -aG sudo $ec2_user"
+  echo -e "\n$green \bAdding $ec2_user to sudo group (elevated privileges)..."
+  ssh $ssh_alias "sudo usermod -aG sudo $ec2_user"
 
-  # list new user
-  ssh -t aws "tput setaf 33; id $ec2_user; tput sgr0"
+  echo -e "\n$green \bListing $ec2_user..."
+  ssh -t $ssh_alias "tput setaf 33; id $ec2_user; tput sgr0"
 
-  # push public key to new user
-  # set ownership of directory and contents to new user
-  # set permissions on parent directory to 700 (owner: read/write/exectute)
-  # set permissions on authorized_keys to 600 (owner: read/write)
-  echo -e "\n$green \bPushing public key to new user: $ec2_user..."
-  cat ~/src/config/keys/$key_identity.pub | ssh aed " \
-    sudo mkdir /home/$ec2_user/.ssh && \
-    sudo tee /home/$ec2_user/.ssh/authorized_keys > /dev/null && \
-    sudo chown -R $ec2_user:$ec2_user /home/$ec2_user/.ssh && \
-    sudo chmod =,u+rwx /home/$ec2_user/.ssh && \
-    sudo chmod =,u+rw ~/.ssh/authorized_keys"
+  echo -e "\n$green \bPushing public key to $ec2_user..."
+  cat $aed_keys/$ssh_key_public | ssh $ssh_alias " \
+    sudo mkdir -p /home/$ec2_user/.ssh \
+    && sudo tee /home/$ec2_user/.ssh/authorized_keys > /dev/null"
 
-  # cat pushed public key
-  ssh -t aws "tput setaf 33; sudo cat \
+  echo -e "\n$green \bChanging ownership of SSH config directory..."
+  ssh $ssh_alias "sudo chown -R $ec2_user:$ec2_user /home/$ec2_user/.ssh"
+
+  echo -e "\n$green \bChanging SSH file permissions..."
+  ssh $ssh_alias "sudo chmod =,u+rwx /home/$ec2_user/.ssh \
+  && sudo chmod =,u+rw ~/.ssh/authorized_keys"
+
+  echo -e "\n$green \bPushing public key to SSH authorized keys..."
+  ssh -t $ssh_alias "tput setaf 33; sudo cat \
     /home/$ec2_user/.ssh/authorized_keys; tput sgr0"
-}
-
-ec2_eip() {
-  echo -e "$white
-  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-  \b\bXX  EIP: IP Address Obtain & Associate  XX
-  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-
-  # check for EIP
-  if $(aws ec2 describe-addresses | grep -q AllocationId); then
-
-    echo -e "\n$yellow \b Existing EIP Address Found... \n $reset"
-    aws ec2 describe-addresses --output table
-    echo -e "$green\n"
-
-    # prompt to release
-    read -rp "Release EIP? [Y/N] " response
-
-    # check for response
-    if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
-      echo -e "\n$green \bReleasing EIP address..."
-      aws ec2 release-address --allocation-id \
-        $(aws ec2 describe-addresses \
-        --query 'Addresses[*].AllocationId' \
-        --output text)
-      echo -e "\n$blue \bEIP Address Released!"
-    fi
-
-  else
-    # obtain elastic ip address (EIP) & get allocation-id
-    echo -e "\n$green \bObtaining Elastic IP address (EIP)... \n"
-    eip_id=$(aws ec2 allocate-address --output text | awk '{print $1}')
-
-    # list new EIP
-    aws ec2 describe-addresses \
-      --filter=Name=allocation-id,Values=$eip_id \
-     --output table
-
-    # assign EIP to EC2 instance
-    echo -e "\n$green \bAssociating EIP with EC2 instance... \n"
-    aws ec2 associate-address \
-      --instance-id $ec2_id \
-      --allocation-id $eip_id \
-      --output table
-
-    # get EIP octets
-    eip=$(aws ec2 describe-instances \
-      --instance-ids $ec2_id \
-      --query 'Reservations[*].Instances[*].PublicIpAddress' \
-      --output text)
-
-    # update IP address in ssh connection alias
-    echo -e "\n$green \bUpdating IP address in ssh connection alias..."
-    sed -i '' "s/HostName $ec2_ip/HostName $eip/" ~/.ssh/config
-    ec2_ip=$eip
-
-    # list updated ssh connection alias
-    echo $blue && cat $ssh_cfg
-  fi
-}
-
-terminate(){
-  echo -e "$white
-  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-  \b\bXX  EC2: Instance Termination  XXXXXXXXXX
-  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-
-  echo -e $yellow ""
-  read -rp "Terminate AWS EC2 Instance? [Y/N] " response
-  if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
-
-    # terminate instance
-    echo -e "$green \bTerminating AWS EC2 Instance... $reset"
-    aws ec2 terminate-instances --instance-ids $(aws ec2 describe-instances \
-      --region us-west-1 \
-      --query 'Reservations[].Instances[].[InstanceId]' \
-      --output text)
-
-    # $green light launchInstance function
-    launch=true
-  fi
-}
-
-status() {
-  aws ec2 describe-instance-status --output table # EC2 instance status
-}
-stop() {
-  aws ec2 # EC2 instance
-}
-reboot() {
-  aws ec2 # EC2 instance
 }

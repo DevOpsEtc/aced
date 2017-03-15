@@ -18,15 +18,19 @@ aed_config="$aed_root/config"           # AED config path
 aed_keys="$aed_config/keys"             # AED key pair path
 aed_aws="$aed_config/aws"               # AED AWS config path
 aws_config="$HOME/.aws"                 # AWS default config path
-ssh_config="$HOME/.ssh"                 # SSH config path
-ssh_alias="aed"                         # AED SSH connection alias
+
+# Locahlhost SSH
 ssh_key_private="aed_key"               # PKI private key
-ssh_key_public="aed_key.pub"            # PKI pubic ke7 (imported to AWS)
+ssh_key_public="aed_key.pub"            # PKI pubic key (imported to AWS)
+ssh_alias="aed"                         # AED SSH connection alias
+ssh_hostname=""                         # AED SSH connection IP address
+ssh_user=""                             # AED SSH connection user (ec2_user)
+ssh_port=""                             # AED SSH connection port number
 
 # AWS Resources
 aws_output="json"                       # cli default output
 aws_region="us-west-1"                  # cli default region
-eip_address="000.000.000.000"           # EIP public IP address
+ec2_ip=""                               # EIP public IP address
 iam_group="AED_Admins"                  # IAM user group name
 iam_group_desc="AED Administrators"     # IAM user group description
 iam_pol_iam="AED_Policy_IAM"            # IAM policy: IAM permissions
@@ -37,16 +41,21 @@ ec2_ami_owner="099720109477"            # AMI owner: Canonical (Ubuntu)
 ec2_ami_name="xenial"                   # AMI owner: Ubuntu server code name
 ec2_ami_ver="16.04"                     # AMI owner: current Ubuntu LTS
 ec2_group="AED_Sec_Group"               # EC2 security group name
-ec2_group_desc="AED Security Group"          # EC2 security group description
+ec2_group_desc="AED Security Group"     # EC2 security group description
 ec2_user="ace"                          # EC2 OS username
-ec2_default_user="ubuntu"               # EC2 OS default username
-ec2_id=""                               # EC2 instance ID
+ec2_user_def="ubuntu"                   # EC2 OS default user baked into AMI
+ec2_temp_pass="top_secret"              # EC2 OS temporary password for ec2_user
+ec2_id="i-016a142d05543a31c"            # EC2 instance ID
 ec2_tag="aed"                           # EC2 instance tag
 ec2_ssh_port=1337                       # EC2 SSH port; only reduces log clutter
+ec2_ssh_port_def=22                     # EC2 SSH port; only reduces log clutter
 ec2_access_ip_hm="000.000.000.000/24"   # EC2 ingress IP: home netmask 24
 ec2_access_ip_wk="000.000.000.000/24"   # EC2 ingress IP: work netmask 24
 ec2_access_ip_pub="000.000.000.000/32"  # EC2 ingress IP: public netmask 32
 ec2_access_ip_nutz="0.0.0.0/0"          # EC2 ingress IP: anywhere
+
+# AWS URLs
+aws_con=http://$aws_region.console.aws.amazon.com/ec2/v2/home?region=$aws_region
 
 # Misc
 aed_ver="1.0.0"                         # AED version number
