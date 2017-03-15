@@ -187,7 +187,7 @@ ec2_eip_create() {
       if [ "$eip_release" != false ]; then
         echo -e "\n$green \bReleasing EIP..."
         aws ec2 release-address --allocation-id $e
-        # return_check
+        return_check
       fi
     done
   fi
@@ -198,25 +198,25 @@ ec2_eip_create() {
     --query AllocationId \
     --output text
     )
-  # return_check
+  return_check
 
   echo -e "\n$green \bAssociating EIP with EC2 instance: $ec2_tag... \n"
   aws ec2 associate-address \
     --allocation-id $eip_id \
     --instance-id $ec2_id \
     --output table
-  # return_check
+  return_check
 
   echo -e "\n$green \bGetting EC2 instance $ec2_tag's new public IP address..."
   ec2_ip=$(aws ec2 describe-instances \
     --instance-ids $ec2_id \
     --query Reservations[*].Instances[*].PublicIpAddress \
     --output text)
-  # return_check
+  return_check
 
   echo -e "\n$green \bPushing EIP address: $ec2_ip => AED config... "
-  # update_config ec2_ip
-  # return_check
+  update_config ec2_ip
+  return_check
 
   echo -e "\n$yellow \bYou can review EIP allocation in the AWS web console: \
   \n$aws_con#Addresses $reset"
