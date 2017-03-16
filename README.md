@@ -1,16 +1,17 @@
 ```
-  ┏━━━━━━━━━━━━━━━┓
-  ┃      _    _____ ____    ┃
-  ┃     / \  | ____|  _ \   ┃
-  ┃    / _ \ |  _| | | | |  ┃
-  ┃   / ___ \| |___| |_| |  ┃
-  ┃  /_/   \_\_____|____/   ┃
-  ┃                         ┃
-  ┗━━━ AWS EC2 Deploy━━━┛
+     ___   _____  _____ ______
+    / _ \ /  __ \|  ___||  _  \
+   / /_\ \| /  \/| |__  | | | |
+   |  _  || |    |  __| | | | |
+   | | | || \__/\| |___ | |/ /
+   \_| |_/ \____/\____/ |___/
+
+ AWS Cloud Environment Deployment
+
 ```
 
-**What is AED:** <br>
-AED is an Amazon Web Services EC2 instance generator. Highly opinionated and user configurable, AED automates AWS API calls via the aws-cli app to create a fast, secure & lightweight server running the Ghost publishing platform.
+**What is ACED:** <br>
+ACED is an Amazon Web Services EC2 instance generator. Highly opinionated and user configurable, ACED automates AWS API calls via the aws-cli app to create a fast, secure & lightweight server running the Ghost publishing platform.
 
 - Single EC2 Instance with EBS volume
 - Elastic IP for custom domain name
@@ -32,7 +33,7 @@ Apps installed & configured:
 - Git
 - OpenVPN
 
-**Why Use AED:** <br>
+**Why Use ACED:** <br>
 Wicked fast deployment of a web server/blog on the cheap. Just how fast? Launch instance, harden server, install/config apps and push to remote repo quicker than you can drink a grande skinny latte! Just how cheap? FREE for a year, can't beat that!
 
 Designed for lazy people by a lazy person. Don't build your web server by hand anymore, and stop using the AWS Management Console for every darn EC2 task.
@@ -47,38 +48,37 @@ Designed for lazy people by a lazy person. Don't build your web server by hand a
 - Have existing or generate a new public-key encryption key pair: <br>
     https://github.com/DevOpsEtc/bin/blob/master/key_pair.sh
 
-**Installing AED:** <br>
+**Installing ACED:** <br>
 1. Clone deploy repo <br>
-`$ git clone https://github.com/DevOpsEtc/aed ~/aed/app`
+`$ git clone https://github.com/DevOpsEtc/aced ~/aced/app`
 
-2. Run AED app <br>
-`$ ~/aed/app/aed.sh`
+2. Run ACED app <br>
+`$ ~/aced/app/aced.sh`
 
 **Getting Started:** <br>
 
-AED Commands:
+ACED Commands:
 ```
-$ aed                    # AED: task menu
-$ aed -c or -connect     # EC2: remote access connect
-$ aed -ip                # EIP: rotate public IP
-$ aed -on or -start      # EC2: instance start
-$ aed -off or -stop      # EC2: instance stop
-$ aed -r or -rule        # EC2: remote access ingress rules
-$ aed -rb or -reboot     # EC2: instance reboot
-$ aed -s or -status      # EC2: instance status
-$ aed -sec or -security  # EC2: keys, group, & rule tasks
-$ aed -u or -uninstall   # AED: uninstall
-$ aed -v or -version     # AED: version information
-$ aed -? or -h or -help  # AED: help
+$ aced                    # show ACED task menu
+$ aced -c or -connect     # access ACED instance via SSH
+$ aced -ip                # show ACED public IP address
+$ aced -on or -start      # start ACED instance
+$ aced -off or -stop      # stop ACED instance
+$ aced -r or -rule        # add ingress rule for remote access to ACED
+$ aced -rb or -reboot     # reboot ACED instance
+$ aced -s or -status      # show ACED instance status
+$ aced -u or -uninstall   # uninstall ACED
+$ aced -v or -version     # show ACED version information
+$ aced -? or -h or -help  # show ACED help
 ```
 
 **Remote Access:** <br>
-AED generates an EC2 ingress rule which restricts remote access to SSH connections originating from the public IP address in use during install. You can easily create/revoke new ingress rules for access from anywhere by running:
+ACED generates an EC2 ingress rule which restricts remote access to SSH connections originating from the public IP address in use during install. You can easily create/revoke new ingress rules for access from anywhere by running:
 
-`$ aed -rule.`
+`$ aced -rule.`
 
 **Git Repository:** <br>
-AED generated a remote git repo, which you can connect to push blog posts to Ghost. To get started, you need to create a new local git repo.
+ACED generated a remote git repo, which you can connect to push blog posts to Ghost. To get started, you need to create a new local git repo.
 
 ```
 # remove repo directory:

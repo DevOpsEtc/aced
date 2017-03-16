@@ -1,163 +1,166 @@
 #!/usr/bin/env bash
 
-####################################################
-##  filename:   iam.sh                            ##
-##  path:       ~/src/deploy/cloud/aws/           ##
-##  purpose:    IAM group, policy, user           ##
-##  date:       03/11/2017                        ##
-##  repo:       https://github.com/DevOpsEtc/aed  ##
-##  clone path: ~/aed/app/                        ##
-####################################################
+#####################################################
+##  filename:   iam.sh                             ##
+##  path:       ~/src/deploy/cloud/aws/            ##
+##  purpose:    IAM group, policy, user            ##
+##  date:       03/16/2017                         ##
+##  repo:       https://github.com/DevOpsEtc/aced  ##
+##  clone path: ~/aced/app/                        ##
+#####################################################
 
 iam() {
-  iam_keys_create_root
-
-  exit 0 # break point
-
-  iam_group_create
-  iam_policy_create
-  iam_user_create
-  iam_keys_create
-  iam_keys_root_rm
-  aws_config
+  echo -e "$white
+  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  \b\bXX  IAM: Keys/Group/Policy  XXXXXXXXX
+  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+  iam_keys_create root # check/create IAM access keys; pass root as argument
+  iam_group_create     # check/create IAM group
+  iam_policy_create    # create/embed inline IAM group policies
+  iam_user_create      # check/create IAM user
+  iam_keys_create      # check/create IAM access keys
+  iam_keys_remove root # delete IAM access keys; pass root as argument
 }
 
 iam_keys_rotate() {
+  echo -e "$white
+  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  \b\bXX  IAM: User Access Key Rotation  XX
+  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
   iam_keys_create
-  aws_config
 }
 
-iam_keys_create_root() {
+aws_config() {
   echo -e "$white
-  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-  \b\bXX  IAM: Temporary Root Access Key Creation XX
-  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  \b\bXX  AWS: Updating Config Values  XXXX
+  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 
-  echo -e "$gray
-  1. Open https://console.aws.amazon.com/iam/home#/security_credential
-  2. Sign in to your account if prompted
-  3. Click \"Continue to Security Credentials\" if message modal appears
-  4. Expand \"Access Keys (Access Key ID and Secret Access Key)\"
-  5. Delete an access key if needed (only two allowed)
-  6. Click button \"Create New Access Key\"
-  7. Click button \"Download Key File\""
+  if [ "$#" -eq 1 ]; then
+    echo -e "\n$green \bProcessing access key file: Access Key ID..."
+    iam_key_id=$(awk '/AWSAccessKeyId/ \
+      {gsub(/AWSAccessKeyId=/, ""); print}' $1)
+    return_check
 
-  echo -e "\n$white \bOpening website in 4 seconds... \n$yellow"
-  sleep 4
-  open https://console.aws.amazon.com/iam/home#/security_credential
+    echo -e "\n$green \bProcessing access key file: Secret Access Key..."
+    iam_key_secret=$(awk '/AWSSecretKey/ \
+      {gsub(/AWSSecretKey=/, ""); print}' $1)
+    return_check
 
-  read -p "After downloading key file, press enter key to continue"
+    echo -e "\n$green \bAWS configure: pushing extracted credentials..."
+    aws configure set aws_access_key_id $iam_key_id \
+      && aws configure set aws_secret_access_key $iam_key_secret
+    return_check
 
-  echo -e "\n$green \bFinding key file..."
-  rootkey=$(find $HOME -name rootkey.csv -print -quit)
-  return_check
+    echo -e "\n$green \bDeleting temporary credentials file..."
+    rm -f $1
+    return_check
 
-  echo -e "\n$green \bProcessing key file: Access Key ID..."
-  iam_key_id=$(awk '/AWSAccessKeyId/ \
-    {gsub(/AWSAccessKeyId=/, ""); print}' $rootkey)
-  return_check
-
-  echo -e "\n$green \bProcessing key file: Secret Access Key..."
-  iam_key_secret=$(awk '/AWSSecretKey/ \
-    {gsub(/AWSSecretKey=/, ""); print}' $rootkey)
-  return_check
-
-  echo -e "\n$green \baws configure: pushing extracted credentials..."
-  aws configure set aws_access_key_id $iam_key_id \
-    && aws configure set aws_secret_access_key $iam_key_secret
-  return_check
-
-  echo -e "\n$green \baws configure: pushing config..."
-  aws configure set default.region $aws_region \
-    && aws configure set default.output $aws_output
-  return_check
-
-  echo -e "\n$green \bDeleting localhost root key file..."
-  rm -f $rootkey
-  return_check
-
-} # end function: iam_keys_create_root
+    echo -e "\n$green \bAWS configure: pushing config..."
+    aws configure set default.region $aws_region \
+      && aws configure set default.output $aws_output
+    return_check
+  else
+    echo -e "\n$red \bA single argument was expected! $reset"
+    return
+  fi
+}
 
 iam_group_create() {
   echo -e "$white
-  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-  \b\bXX  IAM: Group Creation  XXXXXXXXXXXXXXXXX
-  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  \b\bXX  IAM: Group Creation  XXXX
+  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 
-  echo -e "\n$green \bChecking for existing IAM group: $iam_group..."
-  fetch_groups=$(aws iam list-groups --query Groups[*].GroupName --output text)
-
-  if echo $fetch_groups | grep -q -w "$iam_group" ; then
-    echo -e "\n$yellow \b$iam_group found!"
-
-    echo -e "\n$green \bFetching $iam_group's member list..."
-    fetch_group_users=($(aws iam get-group \
-      --group-name "$iam_group" \
-      --query Users[*].UserName \
-      --output text)
+  echo -e "\n$green \bChecking for existing IAM groups..."
+  iam_groups=($(aws iam list-groups \
+    --query Groups[*].GroupName \
+    --output text)
     )
 
-    # remove any users from membership
-    if [ ${#fetch_group_users[@]} -gt 0 ]; then
-      for u in "${fetch_group_users[@]}"; do
-        echo -e "\n$green \bRemoving user: $u..."
-        aws iam remove-user-from-group --user-name $u --group-name "$iam_group"
+  if [ ${#iam_groups[@]} -gt 0 ]; then
+    for g in "${iam_groups[@]}"; do
+      echo -e "\n$blue \bIAM group found: $g \n$yellow"
+
+      if [ $g == "$iam_group" ]; then
+        group_rm=true
+      else
+        read -rp "Remove IAM group $g? [Y/N] " response
+        if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
+          group_rm=true
+        fi
+      fi
+
+      if [ "$group_rm" == true  ]; then
+        echo -e "\n$green \bChecking $g for users..."
+        iam_users=($(aws iam get-group \
+          --group-name "$g" \
+          --query Users[*].UserName \
+          --output text)
+          )
+
+        if [ ${#iam_users[@]} -gt 0 ]; then
+          for u in "${iam_users[@]}"; do
+            echo -e "\n$green \bRemoving $g's user: $u..."
+            aws iam remove-user-from-group \
+              --user-name $u \
+              --group-name "$g"
+            return_check
+          done
+        else
+          echo -e "\n$blue \bNo users in group: $g!"
+        fi
+
+        echo -e "\n$green \bChecking $g for policies..."
+        iam_policies=($(aws iam list-group-policies \
+          --group-name "$g" \
+          --query PolicyNames[*] \
+          --output text))
+
+        if [ ${#iam_policies[@]} -gt 0 ]; then
+          for p in "${iam_policies[@]}"; do
+            echo -e "\n$green \bRemoving $g's policy: $p..."
+            aws iam delete-group-policy \
+              --group-name "$g" \
+              --policy-name "$p"
+            return_check
+          done
+        else
+          echo -e "\n$blue \bNo policies in group: $g!"
+        fi
+
+        echo -e "\n$green \bDeleting IAM group: $g..."
+        aws iam delete-group --group-name "$g"
         return_check
-      done
-    else
-      echo -e "\n$yellow \bNo members found!"
-    fi
-
-    echo -e "\n$green \bFetching $iam_group's policy list..."
-    fetch_group_pols=($(aws iam list-group-policies \
-      --group-name "$iam_group" \
-      --query PolicyNames[*] \
-      --output text)
-    )
-
-    # remove any group policies
-    if [ ${#fetch_group_pols[@]} -gt 0 ]; then
-      for p in "${fetch_group_pols[@]}"; do
-        echo -e "\n$green \bRemoving policy: $p..."
-        aws iam delete-group-policy \
-          --group-name "$iam_group" \
-          --policy-name "$p"
-        return_check
-      done
-    else
-      echo -e "\n$yellow \bNo policies found!"
-    fi
-
-    echo -e "\n$green \bDeleting IAM group: $iam_group..."
-    aws iam delete-group --group-name "$iam_group"
-    return_check
+      else
+        echo -e "\n$yellow \bDid not remove IAM group: $g!"
+      fi
+    done # end loop: iam_groups
   else
-    echo -e "\n$yellow \bIAM group: $iam_group not found!"
+    echo -e "\n$blue \bNo IAM groups found!"
   fi
 
-  echo -e "\n$green \bCreating IAM user group: $iam_group..."
+  echo -e "\n$green \bCreating IAM group: $iam_group..."
   echo $blue; aws iam create-group --group-name $iam_group
   return_check
 }
 
 iam_policy_create() {
-  # policy generator: https://awspolicygen.s3.amazonaws.com/policygen.html
-  # ARNs: http://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html
   echo -e "$white
-  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-  \b\bXX  IAM: Policy Creation  XXXXXXXXXXXXXXXX
-  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  \b\bXX  IAM: Policy Creation  XXX
+  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 
-  # fetch AWS account ID
+  echo -e "\n$green \bFetching AWS account ID..."
   aws_account=$(aws ec2 describe-security-groups \
     --query 'SecurityGroups[0].OwnerId' \
-    --output text
-    )
+    --output text)
+  return_check
 
-  echo -e "\n$green \bEmbedding IAM inline policy $iam_pol_iam..."
+  echo -e "\n$green \bEmbedding IAM inline policy: $iam_policy_iam..."
   aws iam put-group-policy \
     --group-name $iam_group \
-    --policy-name $iam_pol_iam \
+    --policy-name $iam_policy_iam \
     --policy-document  \
     '{
       "Version": "2012-10-17",
@@ -170,10 +173,10 @@ iam_policy_create() {
     }'
   return_check
 
-  echo -e "\n$green \bEmbedding IAM inline policy $iam_pol_ec2..."
+  echo -e "\n$green \bEmbedding IAM inline policy: $iam_policy_ec2..."
   aws iam put-group-policy \
     --group-name $iam_group \
-    --policy-name $iam_pol_ec2 \
+    --policy-name $iam_policy_ec2 \
     --policy-document  \
     '{
       "Version": "2012-10-17",
@@ -193,8 +196,8 @@ iam_policy_create() {
           "Resource": "arn:aws:ec2:*:'$aws_account':instance/*",
           "Condition": {
             "StringNotEquals": {
-              "ec2:Region": "us-west-1",
-              "ec2:InstanceType": "t2.micro"
+              "ec2:Region": '$aws_region',
+              "ec2:InstanceType": '$aws_type'
             }
           }
         }
@@ -209,37 +212,54 @@ iam_user_create() {
   \b\bXX  IAM: User Creation  XXXXXXXXXXXXXXXXXX
   \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 
-  echo -e "\n$green \bChecking for existing IAM user: $iam_user..."
-  fetch_users=$(aws iam list-users --query Users[*].UserName --output text)
-
-  if echo $fetch_users | grep -q -w "$iam_user"; then
-    echo -e "\n$yellow \b$iam_user found!"
-
-    echo -e "\n$green \bFetching $iam_user's group membership..."
-    fetch_groups=($(aws iam list-groups-for-user \
-      --user-name $iam_user \
-      --query Groups[*].GroupName \
-      --output text)
+  echo -e "\n$green \bChecking for existing IAM users..."
+  iam_users=($(aws iam list-users
+    --query Users[*].UserName \
+    --output text)
     )
 
-    # remove user from any group membership
-    if [ ${#fetch_groups[@]} -gt 0 ]; then
-      for g in "${fetch_groups[@]}"; do
-        echo -e "\n$green \bRemoving from group: $g..."
-        aws iam remove-user-from-group --user-name $iam_user --group-name "$g"
+  if [ ${#iam_users[@]} -gt 0 ]; then
+    for u in "${iam_users[@]}"; do
+      echo -e "\n$blue \bIAM user found: $u \n$yellow"
+
+      if [ $u == "$iam_user" ]; then
+        user_rm=true
+      else
+        read -rp "Remove IAM user $u? [Y/N] " response
+        if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
+          user_rm=true
+        fi
+      fi
+
+      if [ "$user_rm" == true  ]; then
+        echo -e "\n$green \bChecking $u's group membership..."
+        iam_groups=($(aws iam list-groups-for-user \
+          --user-name "$u" \
+          --query Groups[*].GroupName \
+          --output text))
+
+        if [ ${#iam_groups[@]} -gt 0 ]; then
+          for g in "${iam_groups[@]}"; do
+            echo -e "\n$green \bRemoving $u from group: $g..."
+            aws iam remove-user-from-group --user-name "$u" --group-name "$g"
+            return_check
+          done
+        else
+          echo -e "\n$blue \bNo group membership for IAM user: $u!"
+        fi
+
+        # invoke function to check/remove IAM user access keys
+        iam_keys_remove $u
+
+        echo -e "\n$green \bDeleting IAM user: $u..."
+        aws iam delete-user --user-name "$u"
         return_check
-      done
-    else
-      echo -e "\n$yellow \bNo group membership for $iam_user!"
-    fi
-
-    iam_keys_remove # invoke function to check/remove $iam_user access keys
-
-    echo -e "\n$green \bDeleting IAM user: $iam_user..."
-    aws iam delete-user --user-name "$iam_user"
-    return_check
+      else
+        echo -e "\n$blue \bDid not delete IAM user: $u"
+      fi
+    done # end loop: iam_users
   else
-    echo -e "\n$yellow \b$iam_user not found!"
+    echo -e "\n$yellow \bNo IAM users found!"
   fi
 
   echo -e "\n$green \bCreating $iam_user... \n$blue"
@@ -252,22 +272,39 @@ iam_user_create() {
 }
 
 iam_keys_remove() {
-  echo -e "\n$green \bChecking $iam_user's access keys..."
-  user_access_keys=($(aws iam list-access-keys \
-    --user-name "$iam_user" \
-    --query AccessKeyMetadata[*].AccessKeyId \
-    --output text)
-  )
+  #################################################
+  ####  Check/Delete any IAM user access keys  ####
+  ####  **Expecting IAM username as agrgument  ####
+  #################################################
 
-  # remove any user access keys
-  if [ ${#user_access_keys[@]} -gt 0 ]; then
-    for k in "${user_access_keys[@]}"; do
-      echo -e "\n$green \bDeleting $iam_user's access key $k..."
-      aws iam delete-access-key --access-key $k --user-name "$iam_user"
-      return_check
-    done
+  if [ "$#" -eq 1 ]; then
+    echo -e "\n$green \bChecking access keys for IAM user: $1..."
+
+    if [ $1 == "root" ]; then
+      iam_keys=($(aws iam list-access-keys \
+        --query AccessKeyMetadata[*].AccessKeyId \
+        --output text)
+        )
+    else
+      iam_keys=($(aws iam list-access-keys \
+      --user-name "$1" \
+      --query AccessKeyMetadata[*].AccessKeyId \
+      --output text)
+      )
+    fi
+
+    if [ ${#iam_keys[@]} -gt 0 ]; then
+      for k in "${iam_keys[@]}"; do
+        echo -e "\n$green \bDeleting $1's access key: $k..."
+        aws iam delete-access-key --access-key $k --user-name "$1"
+        return_check
+      done
+    else
+      echo -e "\n$blue \bNo access keys found for IAM user: $1..."
+    fi
   else
-    echo -e "\n$yellow \bNo access keys found for $iam_user..."
+    echo -e "\n$red \bA single argument was expected! $reset"
+    return
   fi
 }
 
@@ -277,73 +314,42 @@ iam_keys_create() {
   \b\bXX  IAM: User Access Key Creation  XXXXXXX
   \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 
-  iam_keys_remove # invoke function to check/remove $iam_user access keys
+  if [ $1 == "root" ]; then
+    echo -e "$gray
+    1. Open https://console.aws.amazon.com/iam/home#/security_credential
+    2. Sign in to your account if prompted
+    3. Click \"Continue to Security Credentials\" if message modal appears
+    4. Expand \"Access Keys (Access Key ID and Secret Access Key)\"
+    5. Delete an access key if needed (only two allowed)
+    6. Click button \"Create New Access Key\"
+    7. Click button \"Download Key File\""
 
-  # create IAM user access key; redirect awk output to file
-  echo -e "\n$green \bCreating access keys for: $iam_user..."
-  aws iam create-access-key --user-name $iam_user \
+    echo -e "\n$white \bOpening website in 4 seconds... \n$yellow"
+    sleep 4
+    open https://console.aws.amazon.com/iam/home#/security_credential
+
+    read -p "After downloading key file, press enter key to continue"
+
+    echo -e "\n$green \bFinding key file..."
+    rootkey=$(find $HOME -name rootkey.csv -print -quit)
+    return_check
+
+    aws_config $rootkey # invoke function to process/push AWS credentials
+  else
+    iam_keys_remove $iam_user
+
+    echo -e "\n$green \bCreating access keys for: $iam_user..."
+    aws iam create-access-key \
+    --user-name $iam_user \
+    --output json \
     | awk '/AccessKeyId/ || /SecretAccessKey/ { \
     gsub(/"/, ""); \
     gsub(/,/, ""); \
-    gsub(/:/, "="); \
-    gsub(/AccessKeyId/, "aws_access_key_id ", $1); \
-    gsub(/SecretAccessKey/, "aws_secret_access_key ", $1); \
-    print $1,$2}' > $aed_aws/credentials_tmp
-  return_check
-
-  # insert profile name to top of temp AWS credentials file
-  sed -i '' '1i\
-    [default]\
-    ' $aed_aws/credentials_tmp
-
-  # delete AWS config file, recreate, change permissions & insert values
-  echo -e "\n$green \bCreating Localhost AWS configuration..."
-  if [ -f $aed_aws/config ]; then
-    rm -f $aed_aws/config &>/dev/null
+    gsub(/: /, "="); \
+    gsub(/AccessKeyId/, "AWSAccessKeyId", $1); \
+    gsub(/SecretAccessKey/, "AWSSecretKey", $1); \
+    print $1,$2}' > $aced_aws/cred_tmp
+    return_check
+    aws_config $aced_aws/cred_tmp
   fi
-  touch $aed_aws/config
-  chmod =,u+rw $aed_aws/config
-  echo "[default]" >> $aed_aws/config
-  echo "output = $aws_output" >> $aed_aws/config
-  echo "region = $aws_region" >> $aed_aws/config
-  return_check
-}
-
-iam_keys_root_rm() {
-  echo -e "$white
-  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-  \b\bXX  IAM: Remove Root Access Keys  XXXXXXXX
-  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-
-  # populate array with a root's access key IDs
-  fetch_root_keys=($(aws iam list-access-keys \
-    --query AccessKeyMetadata[*].AccessKeyId \
-    --output text)
-  )
-
-  # remove any access keys
-  if [ ${#fetch_root_keys[@]} -ne 0 ]; then
-    for k in "${fetch_root_keys[@]}"; do
-      echo -e "\n$green \bDeleting root access key ID: $k..."
-      aws iam delete-access-key --access-key $k
-      return_check
-    done
-  fi
-}
-
-aws_config() {
-  echo -e "$white
-  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-  \b\bXX  IAM: Localhost AWS Configuration  XXX
-  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-
-  # overwrite localhost AWS credentials file
-  echo -e "\n$green \bUpdating AWS credentials for: $iam_user..."
-  mv -f $aed_aws/credentials_tmp $aed_aws/credentials
-  return_check
-
-  # symlink AWS config & credentials files to default location
-  echo -e "\n$green \bCreating AWS dotfile symlinks..."
-  ln -sf $aed_aws/config $aws_config && ln -sf $aed_aws/credentials $aws_config
-  return_check
 }

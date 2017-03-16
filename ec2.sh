@@ -4,21 +4,95 @@
 ##  filename:   ec2.sh                            ##
 ##  path:       ~/src/deploy/cloud/aws/           ##
 ##  purpose:    launch instance & initial config  ##
-##  date:       03/14/2017                        ##
-##  repo:       https://github.com/DevOpsEtc/aed  ##
-##  clone path: ~/aed/app/                        ##
+##  date:       03/15/2017                        ##
+##  repo:       https://github.com/DevOpsEtc/aced  ##
+##  clone path: ~/aced/app/                        ##
 ####################################################
 
 ec2() {
-  ####################################################
-  ####  Invoke functions required for AED install  ###
-  ####################################################
-
+  echo -e "$white
+  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  \b\bXX  EC2: Launch/EIP/SSH Alias/User  XX
+  \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
   ec2_launch        # check EC2 instances; grab AMI; launch new EC2 instance
   ec2_eip_create    # check EIPs; allocate new EIP; associate EIP with EC2
   ssh_alias_create  # create or update existing SSH connection alias
   ec2_user_create   # check EC2 users; create new; assign to EC2 security group
   ssh_alias_create  # run 2nd time to update changed values
+}
+
+ec2_eip_rotate() {
+  ec2_eip_create
+  ssh_alias_create
+}
+
+ec2_keypair_rotate() {
+  :
+}
+
+ec2_state_fetch() {
+  ##############################################
+  ####  Fetch current state of EC2 instance  ###
+  ##############################################
+
+  ec2_state=$(aws ec2 describe-instances \
+    --instance-ids $ec2_id \
+    --query 'Reservations[].Instances[].State.Name' \
+    --output text
+    )
+}
+
+ec2_status() {
+  ec2_state_fetch # invoke function to fetch fresh state
+  if [ $ec2_state == "running" ]; then
+    aws ec2 describe-instance-status \
+      --instance-ids $ec2_id \
+      --output table
+  else
+    echo -e "\n$yellow \bDrat, can't stop $ec2_tag because it's: $ec2_state"
+    return
+  fi
+}
+
+ec2_start() {
+  ec2_state_fetch
+  if [ $ec2_state == "stopped" ]; then
+    echo -e "\n$green \bStarting EC2 Instance: $ec2_tag..."
+    aws ec2 start-instances --instance-ids $ec2_id
+    aws ec2 wait instance-running --instance-ids "$ec2_id" &
+    show_active
+  else
+    echo -e "\n$yellow \bDrat, can't start $ec2_tag because it's: $ec2_state"
+    return
+  fi
+}
+
+ec2_stop() {
+  ec2_state_fetch
+  if [ $ec2_state == "running" ]; then
+    read -rp "Confirm stop EC2 instance: $ec2_tag? [Y/N] " response
+
+    if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
+      echo -e "\n$green \bStopping EC2 Instance: $ec2_tag..."
+      aws ec2 stop-instances --instance-ids $ec2_id
+      aws ec2 wait instance-stopped --instance-ids "$ec2_id" &
+      show_active
+    fi
+  else
+    echo -e "\n$yellow \bDrat, can't stop $ec2_tag because it's: $ec2_state"
+    return
+  fi
+}
+
+ec2_reboot() {
+  ec2_state_fetch
+  if [ $ec2_state == "running" ]; then
+      ec2_stop
+      ec2_start
+  else
+    echo -e "\n$yellow \bDrat, can't reboot $ec2_tag because it's: $ec2_state"
+    return
+  fi
 }
 
 ec2_terminate() {
@@ -115,7 +189,7 @@ ec2_launch() {
   aws ec2 create-tags --resources "$ec2_id" --tags Key=Name,Value="$ec2_tag" &
   show_active
 
-  echo -e "\n$green \bPushing EC2 instance ID: $ec2_id => AED config... \n"
+  echo -e "\n$green \bPushing EC2 instance ID: $ec2_id => ACED config... \n"
   update_config ec2_id
   return_check
 
@@ -214,7 +288,7 @@ ec2_eip_create() {
     --output text)
   return_check
 
-  echo -e "\n$green \bPushing EIP address: $ec2_ip => AED config... "
+  echo -e "\n$green \bPushing EIP address: $ec2_ip => ACED config... "
   update_config ec2_ip
   return_check
 
@@ -233,7 +307,7 @@ ssh_alias_create() {
     echo -e "\n$blue \bSSH connection alias not found: $ssh_alias"
     echo -e "\n$green \bCreating SSH connection alias: $ec2_tag..."
 
-    echo -e "\n$green \bPushing SSH connection values to AED config..."
+    echo -e "\n$green \bPushing SSH connection values to ACED config..."
     ssh_hostname=$ec2_ip
     ssh_user=$ec2_user_def
     ssh_port=$ec2_ssh_port_def
@@ -258,7 +332,7 @@ ssh_alias_create() {
       -e "s/Port $ssh_port/Port $ec2_ssh_port/" \
       ~/.ssh/config
 
-    echo -e "\n$green \bPushing updated SSH connection values to AED config..."
+    echo -e "\n$green \bPushing updated SSH connection values to ACED config..."
     ssh_hostname=$ec2_ip
     ssh_user=$ec2_user
     ssh_port=$ec2_ssh_port
@@ -291,7 +365,7 @@ ec2_user_create() {
   ssh -t $ssh_alias "tput setaf 33; id $ec2_user; tput sgr0"
 
   echo -e "\n$green \bPushing public key to $ec2_user..."
-  cat $aed_keys/$ssh_key_public | ssh $ssh_alias " \
+  cat $aced_keys/$ssh_key_public | ssh $ssh_alias " \
     sudo mkdir -p /home/$ec2_user/.ssh \
     && sudo tee /home/$ec2_user/.ssh/authorized_keys > /dev/null"
 

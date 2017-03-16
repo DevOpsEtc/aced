@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 
-####################################################
-##  filename:   ec2_sec.sh                        ##
-##  path:       ~/src/deploy/cloud/aws/           ##
-##  purpose:    EC2 security tasks                ##
-##  date:       03/10/2017                        ##
-##  repo:       https://github.com/DevOpsEtc/aed  ##
-##  clone path: ~/aed/app/                        ##
-####################################################
+#####################################################
+##  filename:   ec2_sec.sh                         ##
+##  path:       ~/src/deploy/cloud/aws/            ##
+##  purpose:    EC2 security tasks                 ##
+##  date:       03/16/2017                         ##
+##  repo:       https://github.com/DevOpsEtc/aced  ##
+##  clone path: ~/aced/app/                        ##
+#####################################################
 
 ec2_sec() {
   ec2_sec_keypair
@@ -19,14 +19,18 @@ ec2_keypair_rotate() {
   ec2_sec_keypair
 }
 
+ec2_rule_add(){
+  :
+}
+
 ec2_sec_keypair() {
   echo -e "$white
   \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-  \b\bXX  Check Localhost Key Pair  XXXXXXXXXXX
+  \b\bXX  Localhost: Key Pair Creation  XXXXXXX
   \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 
   # populate array with localhost key-pair names
-  get_kp_local=($(ls "$aed_keys"))
+  get_kp_local=($(ls "$aced_keys"))
 
   # populate array with localhost private key names
   get_prv_local=($(ls | grep -v  "\."))
@@ -94,42 +98,24 @@ ec2_sec_keypair() {
   \b\bXX  Create New Localhost Key Pair  XXXXXX
   \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 
-  # unset ec2_key_name ec2_key # delete key pair var
-
-  # while [ "$ec2_key_name" != "valid" ] ; do
-  #   echo $yellow
-  #   read -rp "Enter name for new key pair, e.g. name_keypair: " \
-  #     ec2_key
-  #
-  #   # name for public key; append ".pub" to value
-  #   ec2_key_pub=$ec2_key.pub
-  #
-  #   # does the EC2 key pair exist
-  #   if echo "${get_key_pair[@]}" | grep -q -w "$ec2_key.pub"; then
-  #     echo -e "\n$red \bEC2 key pair already exists: $ec2_key"
-  #   else
-  #     ec2_key_name=valid
-  #   fi
-  # done
-
   echo -e "\n$yellow \bYou will now be prompted to enter a passphrase twice. \
   \b\bStore passphrase in a secure location!"
 
   echo -e "\n$green \bCreating key pair: $ssh_key_private... \n$blue"
-  ssh-keygen -t rsa -b 4096 -f $aed_keys/$ssh_key_private -C "$ssh_key_private"
+  ssh-keygen -t rsa -b 4096 -f $aced_keys/$ssh_key_private -C "$ssh_key_private"
   return_check
 
   echo -e "\n$green \bSetting file permissions on $ssh_key_private \
   \b\b($ssh_key_private: 400 & $ssh_key_public: 644) ... \n$blue"
-  chmod =,u+r $aed_keys/$ssh_key_private && chmod =,u+rw,go=r $aed_keys/$ssh_key_public
+  chmod =,u+r $aced_keys/$ssh_key_private && chmod =,u+rw,go=r $aced_keys/$ssh_key_public
   return_check
 
   echo -e "\n$green \bCreating symlink to private key... \n$blue"
-  ln -sf $aed_keys/$ssh_key_private $ssh_config
+  ln -sf $aced_keys/$ssh_key_private $ssh_config
   return_check
 
   echo -e "\n$green \bAdding private key to SSH agent... \n$blue"
-  /usr/bin/ssh-add -K $aed_keys/$ssh_key_private
+  /usr/bin/ssh-add -K $aced_keys/$ssh_key_private
   return_check
 
   echo -e "$white
@@ -140,7 +126,7 @@ ec2_sec_keypair() {
   echo -e "\n$green \bImporting public key... \n$reset"
   aws ec2 import-key-pair \
   --key-name $ssh_key_public \
-  --public-key-material file://$aed_keys/$ssh_key_public
+  --public-key-material file://$aced_keys/$ssh_key_public
   return_check
 }
 

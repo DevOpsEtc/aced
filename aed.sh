@@ -1,166 +1,174 @@
 #!/usr/bin/env bash
 
-############################################################
-##  filename:   aed.sh                                    ##
-##  path:       ~/src/deploy/cloud/aws/                   ##
-##  purpose:    run AED: Automated EC2 Deploy             ##
-##  date:       03/10/2017                                ##
-##  symlink:    $ ln -s ~/src/deploy/cloud/aws ~/aed/app  ##
-##  repo:       https://github.com/DevOpsEtc/aed          ##
-##  clone path: ~/aed/app/                                ##
-##  execute:    $ ~/aed/app/aed.sh                        ##
-##  run:        $ aed                                     ##
-##  options:    -ip -on -off -reboot -rule -sec -status   ##
-##  options:    -terminate -uninstall -ver                ##
-############################################################
+###########################################################
+##  filename:   aced.sh                                  ##
+##  path:       ~/src/deploy/cloud/aws/                  ##
+##  purpose:    run ACED: Automated EC2 Deploy           ##
+##  date:       03/16/2017                               ##
+##  symlink:    $ ln -s ~/src/deploy/cloud/aws ~/aced    ##
+##  repo:       https://github.com/DevOpsEtc/aced        ##
+##  clone path: ~/aced/app/                              ##
+##  execute:    $ ~/aced/app/aced.sh                     ##
+##  run:        $ aced                                   ##
+##  options:    -ip -on -off -reboot -rule -status  ##
+##  options:    -terminate -uninstall -ver               ##
+###########################################################
 
 version() {
   ##########################################################
   ####  Display logo/version pre-rendered figlet  ##########
   ##########################################################
 
-  echo -e "$blue
-        _    _____ ____
-       / \  | ____|  _ \\
-      / _ \ |  _| | | | |
-     / ___ \| |___| |_| |
-    /_/   \_\_____|____/
-    Automated EC2 Deploy
+  echo "$blue
+       ___   _____  _____ ______
+      / _ \ /  __ \|  ___||  _  \\
+     / /_\ \| /  \/| |__  | | | |
+     |  _  || |    |  __| | | | |
+     | | | || \__/\| |___ | |/ /
+     \_| |_/ \____/\____/ |___/
 
-    Version:  $aed_ver
-    Released: $aed_rel
-    Author:   DevOpsEtc
-  "
+   AWS Cloud Environment Deployment
+
+   Version:  $aced_ver
+   Released: $aced_rel
+   Author:   DevOpsEtc
+  $reset"
 }
 
 help() {
   ##########################################################
-  ####  Display AED help & tips  ###########################
+  ####  Display ACED help & tips  ###########################
   ##########################################################
 
   echo -e "\n$yellow
-    AED Commands: \n
-    $ aed                    # AED: task menu
-    $ aed -c or -connect     # EC2: remote access connect
-    $ aed -ip                # EIP: rotate public IP
-    $ aed -on or -start      # EC2: instance start
-    $ aed -off or -stop      # EC2: instance stop
-    $ aed -r or -rule        # EC2: remote access ingress rules
-    $ aed -rb or -reboot     # EC2: instance reboot
-    $ aed -s or -status      # EC2: instance status
-    $ aed -sec or -security  # EC2: keys, group, & rule tasks
-    $ aed -u or -uninstall   # AED: uninstall
-    $ aed -v or -version     # AED: version information
-    $ aed -? or -h or -help  # AED: help
+    ACED Commands: \n
+    $ aced                    # show ACED task menu
+    $ aced -c or -connect     # access ACED instance via SSH
+    $ aced -ip                # show ACED public IP address
+    $ aced -on or -start      # start ACED instance
+    $ aced -off or -stop      # stop ACED instance
+    $ aced -r or -rule        # add ingress rule for remote access to ACED
+    $ aced -rb or -reboot     # reboot ACED instance
+    $ aced -s or -status      # show ACED instance status
+    $ aced -u or -uninstall   # uninstall ACED
+    $ aced -v or -version     # show ACED version information
+    $ aced -? or -h or -help  # show ACED help
   "
 } # end function: help
 
 ec2_dashboard() {
-  # add call to spinner function
-  # does instance exist
-    # is it running
-    # see logs: auth/ssh/web/etc
-    # list processes
-    # is website up
-      # curl
-  status_ec2() {
-    :
-  }
-  status_server() {
-    :
-  }
-  status_webserver() {
-    :
-  }
-  status_www() {
-    :
-  }
-
+  ##########################################################
+  ####  Display EC2 health status  #########################
+  ##########################################################
+  :
 } # end function: ec2_dashboard
 
-tasks() {
+aced_tasks() {
   ##########################################################
   ####  Display AWS IAM & EC2 task menu  ###################
   ##########################################################
+
   clear
-  ec2_dashboard   # invoke function to display server status
-  COLUMNS=20          # force select menu to display vertically
+  ec2_dashboard   # invoke function to display EC2 status
+  COLUMNS=20      # force select menu to display vertically
 
   # populate array with menu options
   task_option=(
-    "IAM: Rotate Access Keys"
-    "EIP: Rotate IP Address"
-    "EC2: Add Remote Access Rule"
-    "EC2: See Instance Status"
-    "EC2: Describe Instance"
-    "EC2: Start Instance"
-    "EC2: Stop Instance"
-    "EC2: Reboot Instance"
-    "EC2: Launch Instance"
-    "EC2: Terminate Instance"
+    "Start EC2 Instance"
+    "Stop EC2 Instance"
+    "Reboot EC2 Instance"
+    "Add EC2 Remote Access Rule"
+    "Rotate IAM Access Keys"
+    "Rotate EC2 IP Address"
+    "Rotate EC2 Key Pair"
+    "Connect EC2 Instance"
     "QUIT"
-  ) # end function: tasks
+  )
 
-  # loop menu until explicity quit
   while true; do
-    echo -e "\n$green \bAED AWS Tasks: \n_________________________________\n"
+    echo -e "\n$green \bACED AWS Tasks:
+    \n_________________________________\n"
     PS3=$'\nChoose task: '
 
     select t in "${task_option[@]}"; do
       case $t in
-        "IAM: Rotate Access Keys")
+        "Start EC2 Instance")
+          ec2_start
+          break ;;
+        "Stop EC2 Instance")
+          ec2_stop
+          break ;;
+        "Reboot EC2 Instance")
+          ec2_reboot
+          break ;;
+        "Add EC2 Remote Access Rule")
+          ec2_rule_add
+          break ;;
+        "Rotate IAM Access Keys")
           iam_keys_rotate
           break ;;
-        "EIP: Rotate IP Address")
+        "Rotate EC2 IP Address")
+          ec2_eip_rotate
           break ;;
-        "EC2: Rotate Key Pair")
+        "Rotate EC2 Key Pair")
           ec2_keypair_rotate
           break ;;
-        "EC2: Add Remote Access Rule")
-          break ;;
-        "EC2: See Instance Status")
-          break ;;
-        "EC2: Describe Instance")
-          break ;;
-        "EC2: Start Instance")
-          break ;;
-        "EC2: Stop Instance")
-          break ;;
-        "EC2: Reboot Instance")
-          break ;;
-        "EC2: Launch Instance")
-          break ;;
-        "EC2: Terminate Instance")
+        "Connect EC2 Instance")
+          ssh $ssh_alias
           break ;;
         "QUIT")
           return ;;
         *)
           echo -e "$yellow \nMust Enter Number: 1-${#task_option[@]} $green\n"
           break ;;
-      esac
-    done # end select menu
-  done # end of menu loop
-} # end function: tasks
+      esac # conditionals end
+    done # menu end
+  done # menu loop end
+} # function end: aced_tasks
 
 return_check() {
   ##########################################################
   ####  Check status code of last command  #################
   ##########################################################
 
-  # if prior command failed, then exit AED
   if [ $? -eq 0 ]; then
-    echo -e "\n$blue $icon_pass"
+    echo -e "\n$blue $icon_pass Success!"
   else
-    echo -e "\n$red $icon_fail"
-    exit 1
+    echo -e "\n$red $icon_fail Failure!"
+    exit 1 # exit installer with error
+  fi
+}
+
+update_config() {
+  ##########################################################
+  ####  Push updated value to ACED config  ##################
+  ##########################################################
+
+  if [ "$#" -gt 0 ]; then
+    for i in "$@"; do
+      echo -e "\n$green \bUpdating $aced_title config value: $i = ${!i}..."
+
+      if [ ! $i == "aced_installed" ]; then
+        # find line pattern; substitute characters inside quotes with arg value
+        sed -i '' "/$i/ s/\".*\"/\"${!i}\"/" $aced_app/config.sh
+      else
+        sed -i '' '/aced_installed/ s/false/true /' $aced_app/config.sh
+      fi
+      return_check
+    done
+  else
+    echo -e "\n$red \bNo arguments supplied! $reset"
+    return
   fi
 }
 
 show_active() {
-  ##########################################################
-  ####  Display visual cue for longer running processes  ###
-  ####  e.g. $ sleep 10 & show_active                    ###
-  ##########################################################
+  #########################################################
+  ##  Display visual cue for longer running processes    ##
+  ##  Note: process must be in parent shell; no child    ##
+  ##  e.g. $ sleep 10 & show_active                      ##
+  ##  Note: & command sends prior command to background  ##
+  #########################################################
   pid=$!            # fetch last process ID
   frames='◓◑◒◐'  # animation frames
   i=0               # frame cycle count
@@ -176,22 +184,23 @@ show_active() {
 }
 
 main() {
-  ############################################################
-  ####  Main AED function: install & run  ####################
-  ############################################################
+  ###############################################################
+  ####  Main ACED function: install and/or display task menu  ####
+  ###############################################################
 
-  # bail out if not run from MacOS
-  [[ $(uname) == "Darwin" ]] || { echo -e "\nAED is for MacOS!"; exit 1; }
+  # bail if not run from MacOS or if aws-cli not found
+  [[ $(uname) == "Darwin" ]] || { echo -e "\nACED needs MacOS!"; exit 1; }
+  type -p aws >/dev/null || { echo -e "\nACED needs aws-cli!"; exit 1; }
 
   # set shell option enabling alias expansion for alias test; source aliases
   shopt -s expand_aliases && . ~/.bash_profile
 
-  # set path of AED scripts
+  # set path of ACED scripts
   cd "$(dirname $0)" || exit 1
 
   # source scripts
-  . ./config.sh     # AED config
-  . ./install.sh    # AED install/uninstall
+  . ./config.sh     # ACED config
+  . ./install.sh    # ACED install/uninstall
   . ./iam.sh        # AWS IAM security tasks
   . ./ec2_sec.sh    # AWS EC2 security tasks
   . ./ec2.sh        # AWS EC2 instance tasks
@@ -199,40 +208,47 @@ main() {
   # . ./os_app.sh     # OS app tasks
   # . ./data.sh       # OS app tasks
 
-  # invoke install functions if AED not installed
-  if [ "$aed_installed" != true ]; then
-    install         # AED install
+  if [ "$aced_installed" != true ]; then
+    # invoke functions for ACED installation
+    install         # ACED install
     iam             # AWS IAM tasks
-    # ec2_sec         # AWS EC2 security tasks
+    ec2_sec         # AWS EC2 security tasks
     # ec2             # AWS EC2 instance tasks
     # os_sec          # Ubuntu server hardening tasks
     # os_app          # Ubuntu server app tasks
-    # sed -i '' '/installed=/ s/false/true /' $aed_app/config.sh
-    . $HOME/.bash_profile  # source shell to load AED alias
-    # echo -e "\n$blue \bAED Installed! \n\nEnter $ aed or $ aed -h"
+
+    # update installed config value
+    aced_installed=true
+
+    # invoke function to push updated value to ACED config
+    update_config aced_installed
+
+    # sourced 2nd time to pickup new ACED alias
+    . $HOME/.bash_profile
+
+    echo -e "\n$yellow \bACED Installed! \n\nEnter $ aced or $ aced -h"
+
+    # exit without error
+    exit 0
   fi
 
   # strip off any prefixed hypen from passed argument
   option=${1/-/}
 
-  # AED parameter conditionals
+  # ACED parameter conditionals; bypass ACED task menu
   case $option in
-    c|connect     ) ssh aed    ;; # EC2 remote access connect
-    ip            ) eip        ;; # EC2 rotate public IP
-    on|start      ) ec2_start  ;; # EC2 instance start
-    off|stop      ) ec2_stop   ;; # EC2 instance stop
-    r|rule        ) ec2_rule   ;; # EC2 remote access ingress rules
-    rb|reboot     ) ec2_reboot ;; # EC2 instance reboot
-    s|status      ) ec2_status ;; # EC2 instance status
-    sec|security  ) ec2_sec    ;; # EC2 keys, group, & rule tasks
-    u|uninstall   ) uninstall  ;; # AED uninstall
-    v|ver|version ) version    ;; # AED version information
-    \?|h\help     ) help       ;; # AED help
-    *             ) tasks      ;; # AED task menu; unknown arguments
+    c|connect     ) ssh $ssh_alias ;; # access instance via SSH
+    ip            ) echo $ec2_ip   ;; # show public IP address
+    on|start      ) ec2_start      ;; # start instance
+    off|stop      ) ec2_stop       ;; # stop instance
+    r|rule        ) ec2_rule_add   ;; # add ingress rule for remote access
+    rb|reboot     ) ec2_reboot     ;; # reboot instance
+    s|status      ) ec2_status     ;; # show instance status
+    u|uninstall   ) uninstall      ;; # remove ACED payload
+    v|ver|version ) version        ;; # show ACED version info
+    \?|h\help     ) help           ;; # show ACED help
+    *             ) aced_tasks     ;; # show ACED task menu: wildcard arguments
   esac
-
-  # exit without error
-  exit 0
 }
 
-main "$@" # invoke main AED function; ingest any arguments as written
+main "$@" # invoke main ACED function; ingest any arguments as written

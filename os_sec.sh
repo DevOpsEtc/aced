@@ -4,16 +4,16 @@
 ##  filename:   os_sec.sh                         ##
 ##  path:       ~/src/deploy/cloud/aws/           ##
 ##  purpose:    Server Security Hardening         ##
-##  date:       03/08/2017                        ##
-##  repo:       https://github.com/DevOpsEtc/aed  ##
-##  clone path: ~/aed/app/                        ##
+##  date:       03/15/2017                        ##
+##  repo:       https://github.com/DevOpsEtc/aced  ##
+##  clone path: ~/aced/app/                        ##
 ####################################################
 
 ######################################################
 ####  ssh daemon config: /etc/ssh/sshd_config  #######
 ######################################################
 
-# ssh aws 'cat /etc/ssh/sshd_config'
+# ssh $ssh_alias 'cat /etc/ssh/sshd_config'
 
 # Port 222                :port to listen on; keep logs cleaner
 # LogLevel VERBOSE        :log failed login attempts to /var/log/auth.log
@@ -27,7 +27,7 @@
 # MaxSessions 2           :max simultaneous connections
 
 echo -e "\n$green \bLocking down ssh config..."
-ssh aws "sudo sed -i \
+ssh $ssh_alias "sudo sed -i \
   -e 's/Port 22/Port 222/' \
   -e 's/LogLevel INFO/LogLevel VERBOSE/' \
   -e 's/PermitRootLogin prohibit-password/PermitRootLogin no/' \
@@ -35,7 +35,7 @@ ssh aws "sudo sed -i \
   -e 's/UsePAM yes/UsePAM no/' \
   -e '$ a\ClientAliveInterval 300' \
   -e '$ a\ClientAliveCountMax 0' \
-  -e '$ a\AllowUsers $os_user ubuntu' \
+  -e '$ a\AllowUsers $ec2_user ubuntu' \
   -e '$ a\DebianBanner no' \
   -e '$ a\MaxAuthTries 1' \
   -e '$ a\MaxSessions 2' \
@@ -44,7 +44,7 @@ ssh aws "sudo sed -i \
 
 # restart ssh service
 echo -e "\n$green \bRestarting ssh daemon..."
-ssh aws 'sudo service ssh restart'
+ssh $ssh_alias 'sudo service ssh restart'
 
 #############################################################
 #### update ssh connection alias ############################
@@ -52,7 +52,7 @@ ssh aws 'sudo service ssh restart'
 
 echo -e "\n$green \bUpdating localhost SSH connection alias..."
 sed -i \
-  -e "s/User ubuntu/User $os_user/" \
+  -e "s/User ubuntu/User $ec2_user/" \
   -e 's/Port 22/Port 222/' \
   $ssh_config/config
 
