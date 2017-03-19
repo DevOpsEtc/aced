@@ -86,12 +86,12 @@ iam_group_create() {
         group_rm=true
       else
         read -rp "Remove IAM group $g? [Y/N] " response
-        if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
-          group_rm=true
+        if [[ "$response" =~ ^([nN][oO]|[nN])+$ ]]; then
+          group_rm=false
         fi
       fi
 
-      if [ "$group_rm" == true  ]; then
+      if [ "$group_rm" != false  ]; then
         echo -e "\n$green \bChecking $g for users..."
         iam_users=($(aws iam get-group \
           --group-name "$g" \
@@ -226,12 +226,12 @@ iam_user_create() {
         user_rm=true
       else
         read -rp "Remove IAM user $u? [Y/N] " response
-        if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
-          user_rm=true
+        if [[ "$response" =~ ^([nN][oO]|[nN])+$ ]]; then
+          user_rm=false
         fi
       fi
 
-      if [ "$user_rm" == true  ]; then
+      if [ "$user_rm" != false  ]; then
         echo -e "\n$green \bChecking $u's group membership..."
         iam_groups=($(aws iam list-groups-for-user \
           --user-name "$u" \
@@ -335,6 +335,7 @@ iam_keys_create() {
     return_check
 
     aws_config $rootkey # invoke function to process/push AWS credentials
+
   else
     iam_keys_remove $iam_user
 

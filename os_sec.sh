@@ -28,7 +28,6 @@
 
 echo -e "\n$green \bLocking down ssh config..."
 ssh $ssh_alias "sudo sed -i \
-  -e 's/Port 22/Port 222/' \
   -e 's/LogLevel INFO/LogLevel VERBOSE/' \
   -e 's/PermitRootLogin prohibit-password/PermitRootLogin no/' \
   -e 's/X11Forwarding yes/X11Forwarding no/' \
@@ -50,11 +49,12 @@ ssh $ssh_alias 'sudo service ssh restart'
 #### update ssh connection alias ############################
 #############################################################
 
-echo -e "\n$green \bUpdating localhost SSH connection alias..."
-sed -i \
-  -e "s/User ubuntu/User $ec2_user/" \
-  -e 's/Port 22/Port 222/' \
-  $ssh_config/config
+ssh_alias_create update
+# echo -e "\n$green \bUpdating localhost SSH connection alias..."
+# sed -i \
+#   -e "s/User ubuntu/User $ec2_user/" \
+#   -e 's/Port 22/Port 222/' \
+#   $ssh_config/config
 
 #############################################################
 ####  lock down users  ######################################

@@ -303,40 +303,31 @@ ssh_alias_create() {
   \b\bXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 
   echo -e "\n$green \bChecking for existing SSH alias: $ssh_alias..."
-  if ! grep -wq "Host $ssh_alias" ~/.ssh/config; then
-    echo -e "\n$blue \bSSH connection alias not found: $ssh_alias"
-    echo -e "\n$green \bCreating SSH connection alias: $ec2_tag..."
-
-    echo -e "\n$green \bPushing SSH connection values to ACED config..."
-    ssh_hostname=$ec2_ip
-    ssh_user=$ec2_user_def
-    ssh_port=$ec2_ssh_port_def
-    update_config ssh_hostname ssh_user ssh_port
-
+  if grep -wq "Host $ssh_alias$" ~/.ssh/config; then
+    if [ $1 == "update" ]; then
+      echo -e "\n$green \bUpdating SSH connection alias: $ssh_alias..."
+      sed -i '' \
+        -e "s/HostName $ssh_hostname/HostName $ec2_ip/" \
+        -e "s/User $ssh_user/User $ec2_user/" \
+        ~/.ssh/config
+    else
+      echo -e "\n$green \bRemoving SSH connection alias..."
+      sed -i '' "/## $ssh_alias ##/,/## $ssh_alias ##/d" \
+      ~/.ssh/config &>/dev/null
+      return_check
+    fi
+  else
+    echo -e "\n$green \bCreating SSH connection alias: $ssh_alias..."
     echo -e " \
     \n############### $ssh_alias ###############\
     \nHost $ssh_alias \
-    \n  HostName $ssh_hostname \
-    \n  User $ssh_user \
-    \n  Port $ssh_port \
+    \n  HostName $ec2_ip \
+    \n  User $ec2_user_def \
+    \n  Port 22 \
     \n  IdentityFile ~/.ssh/$ssh_key_private \
     \n############### $ssh_alias ###############" \
     >> ~/.ssh/config
     return_check
-  else
-    echo -e "\n$blue \bSSH connection alias found: $ssh_alias"
-    echo -e "\n$green \bUpdating SSH connection alias: $ssh_alias..."
-    sed -i '' \
-      -e "s/HostName $ssh_hostname/HostName $ec2_ip/" \
-      -e "s/User $ssh_user/User $ec2_user/" \
-      -e "s/Port $ssh_port/Port $ec2_ssh_port/" \
-      ~/.ssh/config
-
-    echo -e "\n$green \bPushing updated SSH connection values to ACED config..."
-    ssh_hostname=$ec2_ip
-    ssh_user=$ec2_user
-    ssh_port=$ec2_ssh_port
-    update_config ssh_hostname ssh_user ssh_port
   fi
 
   echo -e "\n$green \bTesting SSH alias: $ssh_alias..."

@@ -47,33 +47,53 @@ uninstall() {
   if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
     echo -e "\n$green \bRemoving alias..."
     sed -i '' "/alias $ec2_tag=.*/d" ~/.bash_profile
+    return_check
 
-    echo -e "\n$green \bRemoving ACED app directory..."
-    rm -rf $aced_app
+    echo -e "\n$green \bRemoving AWS configuration..."
+    rm -rf $aws_config &>/dev/null
+    return_check
+
+    echo -e "\n$green \bRemoving SSH connection alias..."
+    sed -i '' "/## $ssh_alias ##/,/## $ssh_alias ##/d" \
+      ~/.ssh/config &>/dev/null
+    return_check
+
+    echo -e "\n$green \bRemoving ACED private key from localhost SSH agent..."
+    ssh-add -d "$ssh_key_private" &>/dev/null
+    return_check
 
     echo $yellow; read -rp "Remove ACED config directory? [Y/N] " response
-
     if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
       echo -e "\n$green \bRemoving ACED config directory..."
-      rm -rf $aced_config
+      rm -rf $aced_config &>/dev/null
+      return_check
+    else
+      aced_root_rm=false
     fi
 
     echo $yellow; read -rp "Remove ACED data directory & repo? [Y/N] " response
-
     if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
       echo -e "\n$green \bRemoving ACED data directory & repo..."
-      rm -rf $aced_data
+      rm -rf $aced_data &>/dev/null
+      return_check
+    else
+      aced_root_rm=false
     fi
 
-    echo -e "\n$green \bRemoving AWS configuration..."
-    rm -rf ~/.aws
+    if [ $aced_root_rm != false ]; then
+      rm -rf $aced_root &>/dev/null
+      return_check
+    else
+      echo -e "\n$green \bRemoving ACED app directory..."
+      rm -rf $aced_app &>/dev/null
+      return_check
 
-    echo -e "\n$green \bRemoving ssh connection alias..."
-    sed -i '' "/## $ssh_alias ##/,/## $ssh_alias ##/d" ~/.ssh/config
+      echo -e "\n$yellow \bHere are the files you chose to keep: \n"
+      find ~/aced/* -type f -maxdepth 4
+    fi
 
-    echo -e "\n$yellow \bACED was removed from localhost, but AWS IAM \
-    \b\bgroup/user/access keys, EIP, EC2 instance, keypair, security \
-    \b\bgroups/rules remain."
+    echo -e "\n$yellow \bACED uninstall complete! \
+    \n\nReview AWS web console to manage your remaining IAM & EC2 resources"
 
     version
     echo -e "\n$blue \bThanks for trying ACED!"
