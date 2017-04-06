@@ -4,7 +4,7 @@
 ##  filename:   ec2.sh                             ##
 ##  path:       ~/src/deploy/cloud/aws/            ##
 ##  purpose:    launch instance & initial config   ##
-##  date:       04/03/2017                         ##
+##  date:       04/06/2017                         ##
 ##  repo:       https://github.com/DevOpsEtc/aced  ##
 ##  clone path: ~/aced/app/                        ##
 #####################################################
@@ -25,7 +25,7 @@ ec2_eip_rotate() {
 }
 
 ec2_state() {
-  echo -e "\n$green \bChecking $aced_nm's current state..."
+  echo -e "\n$green \bFetching $aced_nm's current state..."
   state=$(aws ec2 describe-instances \
     --instance-ids $ec2_id \
     --query Reservations[].Instances[].State.Name \
@@ -35,7 +35,7 @@ ec2_state() {
   # title-case string
   state=$(echo $state | awk '{$1=toupper(substr($1,0,1))substr($1,2)}1')
 
-  if [ "$1" != "ssh" ]; then
+  if [ "$1" != "ssh" ] && [ "$1" != "dash" ]; then
     # bail if current state already matches desired state
     [[ "$1" == "$state" ]] || { echo -e "$yellow\nOops, Already $state!"; \
       return; }

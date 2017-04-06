@@ -4,7 +4,7 @@
 ##  filename:   config.sh                          ##
 ##  path:       ~/src/deploy/cloud/aws/            ##
 ##  purpose:    default ACED settings              ##
-##  date:       04/04/2017                         ##
+##  date:       04/06/2017                         ##
 ##  repo:       https://github.com/DevOpsEtc/aced  ##
 ##  clone path: ~/aced/app/                        ##
 #####################################################
@@ -14,8 +14,8 @@ aced_nm="ACED"                         # ACED name: upper-case
 aced_nm_tit="Aced"                     # ACED name: title-case
 aced_nm_low="aced"                     # ACED name: lower-case
 aced_ver="1.0.0"                       # ACED version number
-aced_rel="04/03/2017"                  # ACED release date
-aced_installed=true                      # ACED install status
+aced_rel="04/10/2017"                  # ACED release date
+aced_installed=true                    # ACED install status
 
 # Localhost File Paths
 aced_root="$HOME/aced"                 # ACED root
@@ -50,20 +50,20 @@ ec2_ami_owner="099720109477"           # AMI owner: Canonical (Ubuntu)
 ec2_ami_name="xenial"                  # AMI owner: Ubuntu server code name
 ec2_ami_ver="16.04"                    # AMI owner: current Ubuntu LTS
 ec2_id="i-0cc21a7ef630bbd02"           # EC2 instance ID
-ec2_tag="$aced_nm_low"                 # EC2 instance tag
-ec2_ip="052.009.004.227"               # EIP public IP address
+ec2_tag="$aced_nm_tit"                 # EC2 instance tag
+ec2_ip="052.053.069.036"               # EIP public IP address
 ec2_group="Aced_Sec_Group"             # EC2 security group name
 ec2_group_id="sg-c41063a3"             # EC2 security group ID
 ec2_group_desc="ACED Security Group"   # EC2 security group description
 os_user_def="ubuntu"                   # EC2 OS default user baked into AMI
 os_user="ace"                          # EC2 OS username
 ec2_ssh_port="1337"                    # SSH listen port; only for cleaner logs
-ec2_hostname="DevOpsEtc"               # EC@ OS hostname; seen in ssh prompt
+ec2_hostname="DevOpsEtc"               # EC2 OS hostname; seen in ssh prompt
+ec2_fqdn="devopsetc.com"               # EC2 domain name
 
 # Misc
 icon_pass="✔"                          # command return status: 0
 icon_fail="✘"                          # command return status: 1
-icon_status="፨"                        # dashboard status
 act_frames="◓◑◒◐"                    # activty indicator frames
 act_cur_frame=0                        # activty indicator frame count
 cur_hide=$(tput civis)                 # hide cursor

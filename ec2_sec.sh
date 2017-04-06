@@ -4,7 +4,7 @@
 ##  filename:   ec2_sec.sh                         ##
 ##  path:       ~/src/deploy/cloud/aws/            ##
 ##  purpose:    EC2 security tasks                 ##
-##  date:       04/03/2017                         ##
+##  date:       04/06/2017                         ##
 ##  repo:       https://github.com/DevOpsEtc/aced  ##
 ##  clone path: ~/aced/app/                        ##
 #####################################################
@@ -23,11 +23,6 @@ ec2_sec() {
 }
 
 ec2_rule_list() {
-  echo -e "$white
-  \b\b#########################################
-  \b\b##  EC2: Security Group Rules Listing  ##
-  \b\b#########################################"
-
   echo -e "\n$green \bFetching EC2 security group IDs..."
   group_ids=($(aws ec2 describe-security-groups \
     --query 'SecurityGroups[*].[GroupId]' \
@@ -35,7 +30,7 @@ ec2_rule_list() {
   )
   exit_code_check
 
-  echo -e "\n$green \bChecking EC2 security group rules..."
+  echo -e "\n$green \bFetching EC2 security group rules..."
   if [ "${#group_ids[@]}" -gt 0 ]; then
     for g in "${group_ids[@]}"; do
       name=$(aws ec2 describe-security-groups \
@@ -61,26 +56,28 @@ ec2_rule_list() {
           gsub(/,/,""); \
           print $1, "\t"$2}')
 
-      echo -e "$yellow\n \b####################################"
-      echo -e "$yellow \bGroup Name: \t$name: \nGroup ID: \t$g \
-      \n\nInbound Rules (localhost => EC2):"
+      echo -e "$gray\n \b#################################### \
+        \nGroup Name: \t$blue$name$gray: \nGroup ID: \t$blue$g$gray \
+        \n\nInbound Rules (localhost => EC2):"
 
       if [ -z "$inbound" ]; then
-        echo -e "$yellow \bNone!"
+        echo -e "$blue \bNone!"
       else
-        echo -e "$yellow \b$inbound"
+        echo -e "$blue \b$inbound"
       fi
 
-      echo -e "\n$yellow \bOutbound Rules (EC2 => localhost):"
+      echo -e "\n$gray \bOutbound Rules (EC2 => localhost):"
       if [ -z "$outbound" ]; then
-        echo -e "$yellow \bNone!"
+        echo -e "$blue \bNone!"
       else
-        echo -e "$yellow \b$outbound"
+        echo -e "$blue \b$outbound"
       fi
     done
   else
-    echo -e "\n$yellow \bNo EC2 Security Groups Found"
+    echo -e "\n$blue \bNo EC2 Security Groups Found"
   fi
+  read -n 1 -s -p $'\n'"$yellow""Press any key to continue "
+  clear && clear
 }
 
 ec2_keypair() {

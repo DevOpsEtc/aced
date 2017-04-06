@@ -4,7 +4,7 @@
 ##  filename:   aced.sh                                    ##
 ##  path:       ~/src/deploy/cloud/aws/                    ##
 ##  purpose:    run ACED: Automated EC2 Deploy             ##
-##  date:       04/03/2017                                 ##
+##  date:       04/06/2017                                 ##
 ##  symlink:    $ ln -s ~/src/deploy/cloud/aws ~/aced/app  ##
 ##  repo:       https://github.com/DevOpsEtc/aced          ##
 ##  clone path: ~/aced/app/                                ##
@@ -41,55 +41,133 @@ help() {
     $ aced -on or -start      # start ACED instance
     $ aced -off or -stop      # stop ACED instance
     $ aced -rb or -reboot     # reboot ACED instance
+    $ aced -s or -status      # show full AWS/EC2/ACED status
     $ aced -u or -uninstall   # uninstall ACED
     $ aced -v or -version     # show ACED version information
     $ aced -? or -h or -help  # show ACED help
-  "
+  $reset"
 }
 
 dashboard() {
   ##########################################################
   ####  Display EC2 health status  #########################
   ##########################################################
-  :
+  ec2_state dash  # invoke function to fetch $aced_tag's current state
+
+  case $state in
+    Running	)	state_color=$green  ;;
+    Stopped	)	state_color=$red	  ;;
+  esac
+
+  # get total count of instances (ignore terminated)
+  ec2_ids=$(aws ec2 describe-instances \
+    --filters "Name=instance-state-name,Values= \
+    pending,running,shutting-down,stopping,stopped" \
+    --query 'Reservations[*].Instances[*].InstanceId' \
+    --output text \
+    | wc -w)
+
+  eip_ids=$(aws ec2 describe-addresses \
+    --query Addresses[*].AllocationId \
+    --output text \
+    | wc -w)
+
+  if [ $state == "Running" ]; then
+    system_status=$(aws ec2 describe-instance-status \
+      --instance-ids $ec2_id \
+    	--query InstanceStatuses[*].SystemStatus[].Status \
+    	--output text)
+
+    instance_status=$(aws ec2 describe-instance-status \
+    	--instance-ids $ec2_id \
+    	--query InstanceStatuses[*].InstanceStatus[].Status \
+    	--output text)
+
+    # strip any leading zeros from IP octets; prevent ping resolve error
+    ec2_ip_raw=$(echo $ec2_ip \
+      | awk -F'[.]' '{a=$1+0; b=$2+0; c=$3+0; d=$4+0; print a"."b"."c"."d}')
+
+    ec2_ping_ip=$(ping -c 1 $ec2_ip_raw \
+      | awk -F" |:" '/from/{print $1,$2,$3,$4}')
+
+    ec2_ping_fqdn=$(ping -c 1 $ec2_fqdn \
+      | awk -F" |:" '/from/{print $1,$2,$3,$4}')
+
+    [[ $system_status == "ok" ]] && system_status="Reachable"
+    [[ $instance_status == "ok" ]] && instance_status="Reachable"
+  else
+  	msg="Not Reachable"
+  	system_status="$msg"
+  	instance_status="$msg"
+  	ec2_ping_ip="$msg"
+  	ec2_ping_fqdn="$msg"
+    local ec2_ip="None"
+  fi
+
+  echo
+  clear
+  echo -e "\n$white \bEC2 Totals: $gray \
+    \n______________________________________________________ \
+    \nInstances:$blue\t$ec2_ids $gray \
+    \nEIPs:$blue\t\t$eip_ids $gray \
+    \n______________________________________________________
+  "
+  echo -e "$white \bReachability: $gray \
+    \n______________________________________________________ \
+    \nAWS System:$blue\t$system_status $gray\tEIP Ping: \
+      \b\b\b\b\b\b\b\b$blue\t$ec2_ping_ip $gray \
+    \nEC2 Instance:$blue\t$instance_status $gray\tFQDN Ping: \
+      \b\b\b\b\b\b\b\b$blue\t$ec2_ping_fqdn $gray \
+    \n______________________________________________________
+  "
+  echo -e "$white \b$aced_nm EC2 Instance: $gray \
+    \n______________________________________________________ \
+    \nId:$blue\t$ec2_id $gray\tTag:$blue\t$ec2_tag $gray \
+    \nEIP:$blue\t$ec2_ip $gray\tState:$state_color\t$state \
+    \n$gray \b______________________________________________________
+  "
+  if [ "$1" == "menu" ]; then
+    read -n 1 -s -p "$yellow""Press any key to continue "
+    clear && clear
+  fi
 } # end function: dashboard
 
 task_menu() {
   ##########################################################
   ####  Display AWS IAM & EC2 task menu  ###################
   ##########################################################
-
-  clear
-  dashboard     # invoke function to display EC2 status
-  COLUMNS=20    # force select menu to display vertically
-
   # menu options array
   task_item=(
     "Start $aced_nm"
     "Stop $aced_nm"
     "Reboot $aced_nm"
-    "List Group Rules"
-    "Rotate Access Keys"
-    "Rotate IP Address"
+    "List EC2 Group Rules"
+    "Rotate EC2 IP Address"
+    "Rotate IAM Access Keys"
     "Rotate Key Pair"
+    "Show Full Status"
     "Connect $aced_nm"
     "QUIT"
   )
 
+  clear
   while true; do
-    echo -e "$blue\n*** $aced_nm AWS Tasks ***\n"
-    PS3=$'\nChoose task number: '
+    # COLUMNS=20      # force select menu to display vertically
+    echo -e "\n\n$white \b$aced_nm Tasks $gray \
+      \n______________________________________________________"
+    PS3=$'\n'"$yellow"'Choose task number: '"$reset"
     select task in "${task_item[@]}"; do
       case $task in
-        "Start $aced_nm"      ) ec2_state Stopped; break ;;
-        "Stop $aced_nm"       ) ec2_state Running; break ;;
-        "Reboot $aced_nm"     ) ec2_reboot;        break ;;
-        "List Group Rules"    ) ec2_rule_list;     break ;;
-        "Rotate Access Keys"  ) iam_keys_rotate;   break ;;
-        "Rotate IP Address"   ) ec2_eip_rotate;    break ;;
-        "Rotate Key Pair"     ) ec2_keypair;       break ;;
-        "Connect $aced_nm"    ) ec2_connect;       break ;;
-        "QUIT"                ) return                   ;;
+        "Start $aced_nm"         ) ec2_state Stopped; break ;;
+        "Stop $aced_nm"          ) ec2_state Running; break ;;
+        "Reboot $aced_nm"        ) ec2_reboot;        break ;;
+        "List EC2 Group Rules"   ) ec2_rule_list;     break ;;
+        "Rotate EC2 IP Address"  ) ec2_eip_rotate;    break ;;
+        "Rotate IAM Access Keys" ) iam_keys_rotate;   break ;;
+        "Rotate Key Pair"        ) ec2_keypair;       break ;;
+        "Show Full Status"       ) dashboard menu;    break ;;
+        "Connect $aced_nm"       ) ec2_connect;       break ;;
+        "QUIT"                   ) exit 0;                  ;;
       esac
     done
   done
@@ -224,12 +302,14 @@ main() {
     lip          ) echo $localhost_ip ;; # show localhost public IP address
     on|start     ) ec2_state Stopped  ;; # start instance
     off|stop     ) ec2_state Running  ;; # stop instance
-    rb|reboot    ) ec2_reboot         ;; # reboot instance
+    r|reboot     ) ec2_reboot         ;; # reboot instance
+    s|status     ) dashboard          ;; # show full AWS/EC2/ACED status
     u|uninstall  ) uninstall          ;; # remove ACED payload
     v|ver        ) version            ;; # show ACED version info
-    \?|h\help    ) help               ;; # show ACED help
+    \?|h|help    ) help               ;; # show ACED help
     *            ) task_menu          ;; # show ACED task menu: wildcard args
   esac
 }
 
-main "$@" # invoke main ACED function; ingest any arguments as written
+# invoke main ACED function; ingest any arguments as written
+main "$@"

@@ -53,14 +53,13 @@ decision_response() {
   ####  Display decision/prompt for response     ####
   ####  e.g: $ decision_response Are you tired?  ####
   ###################################################
-
   argument_check
 
   # concatenate parameter
   decision=$*
 
   while true; do
-    read -n 1 -p $'\n'"$yellow""$decision (Y/N) " response
+    read -n 1 -p $'\n'"$yellow""$decision (Y/N) $reset" response
     case $response in
       y|Y ) echo; break ;;
       n|N ) echo; break ;;
@@ -74,7 +73,7 @@ ec2_lip_fetch() {
   ip_raw=$(curl -s http://checkip.amazonaws.com)
   exit_code_check
 
-  # strip leading zeros from IP octets; prevents AWS malformed error
+  # strip any leading zeros from IP octets; prevent AWS malformed error
   localhost_ip=$(echo $localhost_ip \
     | awk -F'[.]' '{a=$1+0; b=$2+0; c=$3+0; d=$4+0; print a"."b"."c"."d"/32"}')
 }
