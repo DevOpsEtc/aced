@@ -4,7 +4,7 @@
 ##  filename:   ec2_sec.sh                         ##
 ##  path:       ~/src/deploy/cloud/aws/            ##
 ##  purpose:    EC2 security tasks                 ##
-##  date:       04/06/2017                         ##
+##  date:       04/07/2017                         ##
 ##  repo:       https://github.com/DevOpsEtc/aced  ##
 ##  clone path: ~/aced/app/                        ##
 #####################################################
@@ -318,22 +318,30 @@ ec2_rule_ingress_add() {
     echo -e "\n$white \b****  EC2: Authorize Ingress Rule (SSH)  ****"
 
     echo -e "\n$green \bAdding inbound rule (localhost => EC2): \
-    \n\n$blue \bPort: 22 \
-    \nFrom: $ip_raw/32 \
-    \nTo: EC2 Instance: $ec2_tag"
+      \n\n$blue \bPort: 22 (TCP: SSH)\
+      \nFrom: $ip_raw/32"
     aws ec2 authorize-security-group-ingress \
       --group-id $ec2_group_id \
       --protocol tcp \
       --port 22 \
       --cidr $ip_raw/32
     exit_code_check
+
+    echo -e "\n$green \bAdding inbound rule (anywhere => EC2): \
+      \n\n$blue \bPort: 8--1 (ICMP: ECHO) \
+      \nFrom: 0.0.0.0/0"
+    aws ec2 authorize-security-group-ingress \
+      --group-id $ec2_group_id \
+      --protocol icmp \
+      --port 8--1 \
+      --cidr 0.0.0.0/0
+    exit_code_check
   elif [ "$1" == "port_update" ]; then
     ec2_rule_revoke inbound_22 # invoke function to revoke inbound rule
 
     echo -e "\n$green \bAdding new inbound rule (localhost => EC2): \
-    \n\n$blue \bPort: $ec2_ssh_port \
-    \nFrom: $ip_raw/32 \
-    \nTo: EC2 Instance: $ec2_tag"
+      \n\n$blue \bPort: $ec2_ssh_port (TCP: SSH)\
+      \nFrom: $ip_raw/32"
     aws ec2 authorize-security-group-ingress \
       --group-id $ec2_group_id \
       --protocol tcp \
@@ -352,9 +360,8 @@ ec2_rule_ingress_add() {
 
     if [ "$ec2_inbound_cidr" != "$ip_raw/32" ]; then
       echo -e "\n$green \bAdding new inbound rule (localhost => EC2): \
-      \n\n$blue \bPort: $ec2_ssh_port \
-      \nFrom: $ip_raw/32 \
-      \nTo: EC2 Instance: $ec2_tag"
+        \n\n$blue \bPort: $ec2_ssh_port (TCP: SSH) \
+        \nFrom: $ip_raw/32"
       aws ec2 authorize-security-group-ingress \
         --group-id $ec2_group_id \
         --protocol tcp \
@@ -370,8 +377,9 @@ ec2_rule_ingress_add() {
 ec2_rule_egress_add(){
   echo -e "\n$white \b****  EC2: Authorize Egress (HTTP/S)  ****"
 
-  echo -e "\n$green \bAdding outbound rule for HTTP traffic: \
-  \n\n$blue \bFrom: $aced_nm to anywhere: (0.0.0.0/0)"
+  echo -e "\n$green \bAdding new outbound rule (EC2 => anywhere): \
+    \n\n$blue \bPort: 80 (TCP: HTTP) \
+    \nTo: 0.0.0.0/0"
   aws ec2 authorize-security-group-egress \
     --group-id $ec2_group_id \
     --protocol tcp \
@@ -379,8 +387,9 @@ ec2_rule_egress_add(){
     --cidr 0.0.0.0/0
   exit_code_check
 
-  echo -e "$green\nAdding outbound rule for HTTPS traffic: \
-  \n\n$blue \bFrom: $aced_nm to anywhere: (0.0.0.0/0)"
+  echo -e "\n$green \bAdding new outbound rule (EC2 => anywhere): \
+    \n\n$blue \bPort: 443 (TCP: HTTPS) \
+    \nTo: 0.0.0.0/0"
   aws ec2 authorize-security-group-egress \
     --group-id $ec2_group_id \
     --protocol tcp \
