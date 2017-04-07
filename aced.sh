@@ -73,34 +73,95 @@ dashboard() {
     | wc -w)
 
   if [ $state == "Running" ]; then
+
+    echo -e "\n$green \bFetching AWS system status..."
     system_status=$(aws ec2 describe-instance-status \
       --instance-ids $ec2_id \
     	--query InstanceStatuses[*].SystemStatus[].Status \
     	--output text)
+    exit_code_check
+    [[ $system_status == "ok" ]] && system_status="Reachable"
 
+    echo -e "\n$green \bFetching EC2 instance status..."
     instance_status=$(aws ec2 describe-instance-status \
     	--instance-ids $ec2_id \
     	--query InstanceStatuses[*].InstanceStatus[].Status \
     	--output text)
+    exit_code_check
+    [[ $instance_status == "ok" ]] && instance_status="Reachable"
 
     # strip any leading zeros from IP octets; prevent ping resolve error
-    ec2_ip_raw=$(echo $ec2_ip \
+    eip_raw=$(echo $ec2_ip \
       | awk -F'[.]' '{a=$1+0; b=$2+0; c=$3+0; d=$4+0; print a"."b"."c"."d}')
 
-    ec2_ping_ip=$(ping -c 1 $ec2_ip_raw \
+    echo -e "\n$green \bFetching IP ping results..."
+    ping_ip=$(ping -c 1 $eip_raw \
       | awk -F" |:" '/from/{print $1,$2,$3,$4}')
+    exit_code_check
 
-    ec2_ping_fqdn=$(ping -c 1 $ec2_fqdn \
+    echo -e "\n$green \bFetching FQDN ping results..."
+    ping_fqdn=$(ping -c 1 $ec2_fqdn \
       | awk -F" |:" '/from/{print $1,$2,$3,$4}')
+    exit_code_check
 
-    [[ $system_status == "ok" ]] && system_status="Reachable"
-    [[ $instance_status == "ok" ]] && instance_status="Reachable"
+    echo -e "\n$green \bFetching system uptime..."
+    uptime=$(ssh $ssh_alias "uptime -p \
+      | sed -e 's/up //' -e 's/hour*/hr/' -e 's/minute*/min/'")
+    exit_code_check
+
+    echo -e "\n$green \bFetching last login..."
+    last_login=$(ssh $ssh_alias "lastlog -u \$USER \
+      | tail -1 | awk '{print \$4, \$5, \$6, \$7\" from \"\$3}'")
+    exit_code_check
+
+    echo -e "\n$green \bFetching processes..."
+    processes=$(ssh $ssh_alias "ps -A h | wc -l") \
+      && processes_user=$(ssh $ssh_alias "ps U \$USER h | wc -l")
+    exit_code_check
+
+    echo -e "\n$green \bFetching load averages..."
+    top_out=$(ssh $ssh_alias "top -bn1 | head -1")
+    exit_code_check
+
+    logins=$(echo $top_out | awk '{print $6}')
+    load=$(echo $top_out | awk '{print $10,$11,$12}')
+
+    echo -e "\n$green \bFetching memory usage..."
+    mem=$(ssh $ssh_alias "free -mh | tail -2 | head -1") \
+      && free_mem_swp=$(ssh $ssh_alias "free -mh | tail -1")
+    exit_code_check
+
+    mem_tot=$(echo $mem | awk '{print $2}')
+    mem_used=$(echo $mem | awk '{print $3}')
+    mem_free=$(echo $mem | awk '{print $4}')
+    mem_free_cached=$(echo $mem | awk '{print $7}')
+    mem_swap_use=$(echo $free_mem_swp | awk '{print $3}')
+
+    echo -e "\n$green \bFetching disk usage..."
+    disk=$(ssh $ssh_alias "df -h --total" | tail -1)
+    exit_code_check
+
+    disk_tot=$(echo $disk | awk '{print $2}')
+    disk_used=$(echo $disk | awk '{print $3}')
+    disk_avail=$(echo $disk | awk '{print $4}')
+
+    echo -e "\n$green \bChecking for package updates..."
+    apt_updates=$(ssh $ssh_alias "/usr/lib/update-notifier/apt-check 2>&1")
+    exit_code_check
+
+    apt_up_reg=$(echo $apt_updates | cut -d ';' -f 1)
+    apt_up_sec=$(echo $apt_updates | cut -d ';' -f 2)
+
+    echo -e "\n$green \bChecking for package updates..."
+    rel_desc=$(ssh $ssh_alias "lsb_release -d | awk '{print \$2,\$3,\$4}'") \
+    && rel_code=$(ssh $ssh_alias "lsb_release -c | awk '{print \$2}'")
+    exit_code_check
   else
   	msg="Not Reachable"
   	system_status="$msg"
   	instance_status="$msg"
-  	ec2_ping_ip="$msg"
-  	ec2_ping_fqdn="$msg"
+  	ping_ip="$msg"
+  	ping_fqdn="$msg"
     local ec2_ip="None"
   fi
 
@@ -115,9 +176,9 @@ dashboard() {
   echo -e "$white \bReachability: $gray \
     \n______________________________________________________ \
     \nAWS System:$blue\t$system_status $gray\tEIP Ping: \
-      \b\b\b\b\b\b\b\b$blue\t$ec2_ping_ip $gray \
+      \b\b\b\b\b\b\b\b$blue\t$ping_ip $gray \
     \nEC2 Instance:$blue\t$instance_status $gray\tFQDN Ping: \
-      \b\b\b\b\b\b\b\b$blue\t$ec2_ping_fqdn $gray \
+      \b\b\b\b\b\b\b\b$blue\t$ping_fqdn $gray \
     \n______________________________________________________
   "
   echo -e "$white \b$aced_nm EC2 Instance: $gray \
@@ -126,6 +187,24 @@ dashboard() {
     \nEIP:$blue\t$ec2_ip $gray\tState:$state_color\t$state \
     \n$gray \b______________________________________________________
   "
+  echo -e "$white \b$aced_nm EC2 System: $gray \
+    \n______________________________________________________ \
+    \nSystem:$blue\t\t$rel_desc ($rel_code) $gray \
+    \nSys Uptime:$blue\t$uptime $gray \
+    \nLast Login:$blue\t$last_login $gray \
+    \nUser Logins:$blue\t$logins $gray \
+    \nProcesses:$blue\ttotal: $processes ($processes_user \
+      \b\b\b\b\b\bowned by $os_user) $gray \
+    \nLoad Avg:$blue\t$load (1,5,15 minutes) $gray \
+    \nMemory:$blue\t\ttotal: $mem_tot, used: $mem_used, free: $mem_free, \
+      \b\b\b\b\b\bfree cached: $mem_free_cached $gray \
+    \nSwap Usage:$blue\t$mem_swap_use $gray \
+    \nDisk Usage:$blue\ttotal: $disk_tot, used: $disk_used, free: \
+      \b\b\b\b\b\b$disk_avail $gray \
+    \nPkg Updates:$blue\tregular: $apt_up_reg, security: $apt_up_sec $gray \
+    \n______________________________________________________
+  "
+
   if [ "$1" == "menu" ]; then
     read -n 1 -s -p "$yellow""Press any key to continue "
     clear && clear
