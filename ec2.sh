@@ -20,8 +20,12 @@ ec2() {
 }
 
 ec2_eip_rotate() {
+  ec2_state eip            # check state; bail if not running
+  [[ $state == Running ]] || { echo -e "\n$red \bOops, Not Running!"; return; }
   ec2_eip_create rotate    # remove ACED EIP; allocate & associate new ACED EIP
   ssh_alias_create update  # update ssh connection alias with new IP
+  echo -e "\n$yellow \bExpect \"ECDSA key fingerprint changed\" warning \
+  \b\bon next EC2 connect... just add to list of known hosts. $reset"
 }
 
 ec2_state() {
@@ -35,7 +39,7 @@ ec2_state() {
   # title-case string
   state=$(echo $state | awk '{$1=toupper(substr($1,0,1))substr($1,2)}1')
 
-  if [ "$1" != "ssh" ] && [ "$1" != "dash" ]; then
+  if [ "$1" != "ssh" ] && [ "$1" != "dash" ] && [ "$1" != "eip" ]; then
     # bail if current state already matches desired state
     [[ "$1" == "$state" ]] || { echo -e "$yellow\nOops, Already $state!"; \
       return; }
