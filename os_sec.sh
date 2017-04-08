@@ -119,19 +119,71 @@ harden_accounts() {
   exit_code_check
 }
 
-# echo -e "\n$green \bHardening network via sysctl... "
-# exit_code_check
-# Disable Open DNS Recursion
-# Remove Version Info
-# Prevent IP Spoofing
-# brute-force
-# Rate-limit Incoming Port
-# Port Knocking
-# iptables
-#
-# 80  tcp
-# 443 tcp
-# $ec2_ssh_port tcp
-# fail2ban
-# reboot ec2
-# auto sec updates
+ip_tables() {
+  echo -e "\n$white \b**** IPTables: Firewall Setup) **** "
+
+  echo -e "\n$green \bSetting temp default policy INPUT chain: ACCEPT... "
+  ssh $ssh_alias "sudo iptables -P INPUT ACCEPT"
+  exit_code_check
+
+  echo -e "\n$green \bSetting default policy OUTPUT chain: ACCEPT... "
+  ssh $ssh_alias "sudo iptables -P OUTPUT ACCEPT"
+  exit_code_check
+
+  echo -e "\n$green \bFlushing existing rules... "
+  ssh $ssh_alias "sudo iptables --flush"
+  exit_code_check
+
+  echo -e "\n$green \bAdding INPUT rule: ACCEPT TCP SSH ($ec2_ssh_port)... "
+  ssh $ssh_alias "sudo iptables -A INPUT -p tcp --dport $ec2_ssh_port \
+    -m state --state NEW,ESTABLISHED -j ACCEPT"
+  exit_code_check
+
+  echo -e "\n$green \bAdding INPUT rule: ACCEPT TCP HTTP/S (80,443)... "
+  ssh $ssh_alias "sudo iptables -A INPUT -p tcp -m multiport --dports 80,443 \
+    -j ACCEPT"
+  exit_code_check
+
+  echo -e "\n$green \bAdding INPUT rule: ACCEPT ICMP (ping)... "
+  ssh $ssh_alias "sudo iptables -A INPUT -p icmp \
+    --icmp-type echo-request -j ACCEPT"
+  exit_code_check
+
+  echo -e "\n$green \bAdding INPUT rule: ACCEPT loopback device (lo)... "
+  ssh $ssh_alias "sudo iptables -I INPUT 1 -i lo -j ACCEPT"
+  exit_code_check
+
+  echo -e "\n$green \bSetting default policy INPUT chain: DROP... "
+  ssh $ssh_alias "sudo iptables -P INPUT DROP"
+  exit_code_check
+
+  echo -e "\n$green \bSetting up logging of dropped packets => syslog... "
+  ssh $ssh_alias "sudo iptables -A INPUT -m limit --limit 5/min -j \
+    LOG --log-prefix \"IPTables Dropped: \" --log-level 7"
+  exit_code_check
+
+  echo -e "\n$green \bCreating script to restore rules on startup... "
+  shebang='#!/bin/sh' # kludge to avoid painful discovery of proper escaping
+  echo -e "$shebang \
+    \niptables-restore < /etc/iptables.rules \
+    \nexit 0" \
+    | ssh $ssh_alias " \
+    sudo tee /etc/network/if-pre-up.d/iptablesload > /dev/null"
+  exit_code_check
+
+  echo -e "\n$green \bCreating script to save rules on shutdown... "
+  echo -e "$shebang \
+    \niptables-save > /etc/iptables.rules \
+    \nif [ -f /etc/iptables.downrules ]; then \
+    \n  iptables-restore < /etc/iptables.downrules \
+    \nfi \
+    \nexit 0" \
+    | ssh $ssh_alias " \
+    sudo tee /etc/network/if-post-down.d/iptablessave > /dev/null"
+  exit_code_check
+
+  echo -e "\n$green \bSetting both scripts to executable... "
+  ssh $ssh_alias "sudo chmod a+x \
+    /etc/network/{if-post-down.d/iptablessave,if-pre-up.d/iptablesload}"
+  exit_code_check
+}

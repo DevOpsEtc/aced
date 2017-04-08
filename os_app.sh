@@ -37,13 +37,13 @@ os_app_install() {
 
   # array of app names to install
   app_install=(
-    fail2ban
-    htop
-    tree
+    fail2ban            # log monitor triggering iptable brute-force attacks
+    htop                # pretty alternative to top
+    tree                # pretty recursive directory listing
   )
   # node
-  # ghost
-  # nginx
+  # ghost               # node-based blog platform that ingests markdown posts
+  # nginx               # web server: used for proxy/load balancer
 
   for i in "${app_install[@]}"; do
     echo -e "\n$green \bInstalling app: $i... \n$blue"
