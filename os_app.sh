@@ -4,7 +4,7 @@
 ##  filename:   os_app.sh                          ##
 ##  path:       ~/src/deploy/cloud/aws/            ##
 ##  purpose:    install and config apps            ##
-##  date:       04/22/2017                         ##
+##  date:       04/24/2017                         ##
 ##  repo:       https://github.com/DevOpsEtc/aced  ##
 ##  clone path: ~/aced/app/                        ##
 #####################################################

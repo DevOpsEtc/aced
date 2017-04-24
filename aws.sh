@@ -4,7 +4,7 @@
 ##  filename:   aws.sh                             ##
 ##  path:       ~/src/deploy/cloud/aws/            ##
 ##  purpose:    AWS related functions              ##
-##  date:       04/22/2017                         ##
+##  date:       04/24/2017                         ##
 ##  repo:       https://github.com/DevOpsEtc/aced  ##
 ##  clone path: ~/aced/app/                        ##
 #####################################################

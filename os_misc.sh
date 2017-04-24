@@ -4,12 +4,14 @@
 ##  filename:   os_misc.sh                         ##
 ##  path:       ~/src/deploy/cloud/aws/            ##
 ##  purpose:    OS one-off tasks                   ##
-##  date:       04/22/2017                         ##
+##  date:       04/24/2017                         ##
 ##  repo:       https://github.com/DevOpsEtc/aced  ##
 ##  clone path: ~/aced/app/                        ##
 #####################################################
 
 os_misc() {
+  echo -e "\n$white \b****  OS: Misc Install Tasks  ****"
+
   echo -e "\n$green \bRemote: setting OS hostname => $os_hostname... $reset \n"
   ssh -t $ssh_alias " \
     sudo sed -i '/127.0.0.1/ s/^.*$/127.0.0.1 $os_hostname/' /etc/hosts \

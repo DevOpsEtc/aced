@@ -4,7 +4,7 @@
 ##  filename:   config.sh                          ##
 ##  path:       ~/src/deploy/cloud/aws/            ##
 ##  purpose:    default ACED settings              ##
-##  date:       04/22/2017                         ##
+##  date:       04/24/2017                         ##
 ##  repo:       https://github.com/DevOpsEtc/aced  ##
 ##  clone path: ~/aced/app/                        ##
 #####################################################
@@ -14,7 +14,7 @@ aced_nm="ACED"                         # ACED name: upper-case
 aced_nm_title="Aced"                   # ACED name: title-case
 aced_nm_low="aced"                     # ACED name: lower-case
 aced_ver="0.1.0"                       # ACED version number
-aced_rel="04/22/2017"                  # ACED release date
+aced_rel="04/24/2017"                  # ACED release date
 aced_ok=true                           # ACED install status
 
 # Localhost File Paths
