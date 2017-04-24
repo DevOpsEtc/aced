@@ -112,10 +112,12 @@ main() {
   . ./ec2_sec.sh                # EC2 security related tasks
   . ./ec2.sh                    # EC2 instance related tasks
   . ./ec2_health.sh             # EC2 instance health related tasks
-  . ./os_sec.sh                 # OS security related tasks
-  . ./os_app.sh                 # OS app related tasks
-  . ./os_misc.sh                # OS one-off tasks
-  # . ./os_data.sh                # OS file related tasks
+  if [ "$aced_ok" != true ]; then
+    . ./os_sec.sh                 # OS security related tasks
+    . ./os_app.sh                 # OS app related tasks
+    . ./os_misc.sh                # OS one-off tasks
+    # . ./os_data.sh                # OS file related tasks
+  fi
 
   if [ "$aced_ok" != true ]; then
     clear

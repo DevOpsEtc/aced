@@ -3,7 +3,7 @@
 #####################################################
 ##  filename:   os_misc.sh                         ##
 ##  path:       ~/src/deploy/cloud/aws/            ##
-##  purpose:    os one-off tasks                   ##
+##  purpose:    OS one-off tasks                   ##
 ##  date:       04/22/2017                         ##
 ##  repo:       https://github.com/DevOpsEtc/aced  ##
 ##  clone path: ~/aced/app/                        ##

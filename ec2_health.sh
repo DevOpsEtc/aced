@@ -137,10 +137,15 @@ ec2_health() {
     apt_up_reg=$(echo $apt_updates | cut -d ';' -f 1)
     apt_up_sec=$(echo $apt_updates | cut -d ';' -f 2)
 
-    echo -e "\n$green \bFetching system os release info..."
+    echo -e "\n$green \bFetching system OS release info..."
     rel_desc=$(ssh $ssh_alias "lsb_release -d | awk '{print \$2,\$3,\$4}'") \
     && rel_code=$(ssh $ssh_alias "lsb_release -c | awk '{print \$2}'")
     cmd_check
+
+    echo -e "\n$blue \bFetching required reboot..."
+    [ -f /var/run/reboot-required ] && req_reboot="yes" || req_reboot="no"
+    cmd_check
+
   else
   	msg="Not Reachable"
   	system_status="$msg"
@@ -187,6 +192,7 @@ ec2_health() {
     \nDisk Usage:$blue\ttotal: $disk_tot, used: $disk_used, free: \
       \b\b\b\b\b\b$disk_avail $gray \
     \nPkg Updates:$blue\tregular: $apt_up_reg, security: $apt_up_sec $gray \
+    \nReboot Needed:$blue\t$req_reboot $gray \
     \n______________________________________________________
   "
 

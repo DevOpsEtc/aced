@@ -38,7 +38,7 @@ notify() {
         Type: A Record
         Host: @
         Value: $ec2_ip_last
-        TTL: 60 (change to automatic after propagation)
+        TTL: 5 min (change to automatic or highest after propagation)
     4. Wait for DNS propagation
     5. Check status: http://viewdns.info/propagation
     6. During interim, use IP address: http://$ec2_ip_last"
