@@ -1,91 +1,59 @@
 #!/usr/bin/env bash
 
 #####################################################
-##  filename:   app.sh                             ##
+##  filename:   os_app.sh                          ##
 ##  path:       ~/src/deploy/cloud/aws/            ##
 ##  purpose:    install and config apps            ##
-##  date:       04/03/2017                         ##
+##  date:       04/22/2017                         ##
 ##  repo:       https://github.com/DevOpsEtc/aced  ##
 ##  clone path: ~/aced/app/                        ##
 #####################################################
 
 os_app() {
-  echo -e "$white
-  \b\b###############################################
-  \b\b###  OS: App Update/Upgrade/Install/config  ###
-  \b\b###############################################"
-  os_app_install  # invoke function to update & install apps
-  os_app_config   # invoke function to config installed apps
-  os_app_misc
+  echo -e "\n$white \b****  OS: App-Related Install Tasks  ****"
+  os_app_install  # invoke func: update native/install new apps
+  os_app_config   # invoke func: config native/newly installed apps
 }
 
 os_app_install() {
-  # kill package manager yes prompts
-  DEBIAN_FRONTEND=noninteractive
+  echo -e "\n$green \bRemote: updating app list & upgrading native apps & \
+    \b\b\b\b\b dependencies... "
+  echo $blue; ssh -t $ssh_alias " \
+    sudo DEBIAN_FRONTEND=noninteractive apt-get -qy install grub-pc \
+    && sudo DEBIAN_FRONTEND=noninteractive apt-get -qy \
+    -o DPkg::options::="--force-confdef" -o DPkg::options::="--force-confold" \
+    update  \
+      --allow-downgrades \
+      --allow-remove-essential \
+      --allow-change-held-packages \
+    && sudo DEBIAN_FRONTEND=noninteractive apt-get -qy \
+    -o DPkg::options::="--force-confdef" -o DPkg::options::="--force-confold" \
+    dist-upgrade \
+      --allow-downgrades \
+      --allow-remove-essential \
+      --allow-change-held-packages"
+  cmd_check
 
-  echo -e "\n$green \bUpdating package list... \n$blue"
-  ssh $ssh_alias "sudo apt-get update"
-  exit_code_check
-
-  echo -e "\n$green \bUpgrading installed packages & dependencies... \n$blue"
-  ssh $ssh_alias "sudo apt-get -o Dpkg::Options::='--force-confold' \
-  dist-upgrade -q -y --force-yes"
-  exit_code_check
-
-
-  # install nvm
-
-  # array of app names to install
+  # array of apps to install
   app_install=(
-    fail2ban            # log monitor triggering iptable brute-force attacks
-    htop                # pretty alternative to top
     tree                # pretty recursive directory listing
+    htop                # pretty alternative to top
+    nginx               # web server to serve static site
+    iptables-persistent # persist loading of IPTables rules
+    fail2ban            # log monitor (brute-force attacks); trigger IPTable
   )
-  # node
-  # ghost               # node-based blog platform that ingests markdown posts
-  # nginx               # web server: used for proxy/load balancer
 
+  # sudo apt-get remove <app>; sudo apt autoremove
   for i in "${app_install[@]}"; do
-    echo -e "\n$green \bInstalling app: $i... \n$blue"
-    ssh $ssh_alias "sudo apt-get -y install $i"
-    exit_code_check
+    echo -e "\n$green \bRemote: installing app: $i... "
+    echo $blue; ssh -t $ssh_alias "sudo DEBIAN_FRONTEND=noninteractive \
+      apt-get -qq install $i"
+    cmd_check
   done
 }
 
 os_app_config() {
   :
-  # reboot to test everything coming up ok
-  # monitoring
-  # logs
-  # git remote repo
-  # git push to remote repo
-
-  # mkdir -p ~/src/blog/blog.git
-  # cd ~/src/blog/blog.git
-  # git init --bare
-
-  # post receive hooks
-  # see archived bus app
-  # sudo systemctl restart systemd-logind.service
-  # autorenewing cert
-  # log rotation
-}
-
-os_app_misc() {
-  echo -e "\n$green \bUpdating hostname in /etc/hosts... \n$blue"
-  ssh -t $ssh_alias "sudo sed -i \
-    '/127.0.0.1/ s/^.*$/127.0.0.1 $ec2_hostname/' /etc/hosts"
-  exit_code_check
-
-  echo -e "\n$green \bUpdating hostname in /etc/hostname... \n$blue"
-  ssh -t $ssh_alias "sudo sed -i 's/^.*$/$ec2_hostname/' /etc/hostname"
-  exit_code_check
-
-  echo -e "\n$green \bUpdating hostname via $ hostname..."
-  ssh $ssh_alias "sudo hostname $ec2_hostname"
-  exit_code_check
-
-  echo -e "\n$green \bCreating symlink to logs..."
-  ssh $ssh_alias "ln -s /var/log/ ~/logs"
-  exit_code_check
+  # nginx edit config & push server blocks
+  # fail2ban edit config
 }

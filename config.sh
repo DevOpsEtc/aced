@@ -4,23 +4,24 @@
 ##  filename:   config.sh                          ##
 ##  path:       ~/src/deploy/cloud/aws/            ##
 ##  purpose:    default ACED settings              ##
-##  date:       04/06/2017                         ##
+##  date:       04/22/2017                         ##
 ##  repo:       https://github.com/DevOpsEtc/aced  ##
 ##  clone path: ~/aced/app/                        ##
 #####################################################
 
 # Name & Version
 aced_nm="ACED"                         # ACED name: upper-case
-aced_nm_tit="Aced"                     # ACED name: title-case
+aced_nm_title="Aced"                   # ACED name: title-case
 aced_nm_low="aced"                     # ACED name: lower-case
-aced_ver="1.0.0"                       # ACED version number
-aced_rel="04/10/2017"                  # ACED release date
-aced_installed=true                    # ACED install status
+aced_ver="0.1.0"                       # ACED version number
+aced_rel="04/22/2017"                  # ACED release date
+aced_ok=true                           # ACED install status
 
 # Localhost File Paths
 aced_root="$HOME/aced"                 # ACED root
 aced_app="$aced_root/app"              # ACED app path
-aced_data="$aced_root/data"            # ACED git repo
+aced_src="$aced_root/src"              # ACED data path
+aced_blog="$aced_src/blog"             # ACED repo root path
 aced_config="$aced_root/config"        # ACED config path
 aced_keys="$aced_config/keys"          # ACED key pair path
 aced_backups="$aced_config/backups"    # ACED backup path
@@ -40,6 +41,8 @@ root_keys="rootkey.csv"                # root access keys
 ec2_vpc_id="vpc-b68048d2"              # AWS virtual private cloud ID
 aws_output="json"                      # aws-cli default command output
 aws_region="us-west-1"                 # aws-cli default region
+aws_retry=16                           # aws-cli default retries before 255
+aws_timeout=16                         # aws-cli default timeout before 255
 aws_type="t2.micro"                    # aws-cli default EC2 instance type
 iam_group="Aced_Admins"                # IAM user group name
 iam_group_desc="ACED Administrators"   # IAM user group description
@@ -49,17 +52,24 @@ iam_user="Aced_User"                   # IAM username
 ec2_ami_owner="099720109477"           # AMI owner: Canonical (Ubuntu)
 ec2_ami_name="xenial"                  # AMI owner: Ubuntu server code name
 ec2_ami_ver="16.04"                    # AMI owner: current Ubuntu LTS
-ec2_id="i-0cc21a7ef630bbd02"           # EC2 instance ID
-ec2_tag="$aced_nm_tit"                 # EC2 instance tag
-ec2_ip="052.053.069.036"               # EIP public IP address
+ec2_id="i-004ee719f4586617c"           # EC2 instance ID
+ec2_tag="$aced_nm_title"               # EC2 instance tag
+ec2_ip="052.008.069.047"               # EIP public IP address
 ec2_group="Aced_Sec_Group"             # EC2 security group name
-ec2_group_id="sg-c41063a3"             # EC2 security group ID
+ec2_group_id="sg-8faee5e8"             # EC2 security group ID
 ec2_group_desc="ACED Security Group"   # EC2 security group description
-os_user_def="ubuntu"                   # EC2 OS default user baked into AMI
-os_user="ace"                          # EC2 OS username
-ec2_ssh_port="1337"                    # SSH listen port; only for cleaner logs
-ec2_hostname="DevOpsEtc"               # EC2 OS hostname; seen in ssh prompt
-ec2_fqdn="devopsetc.com"               # EC2 domain name
+
+# EC2 OS
+os_user_def="ubuntu"                   # default Ubuntu cloud-init username
+os_user="ace"                          # custom username
+os_ssh_port="5280"                     # SSH listen port; only for cleaner logs
+os_hostname="DevOpsEtc"                # hostname; seen in ssh prompt
+os_fqdn="devopsetc.com"                # domain name
+os_fqdn_dev="dev.$os_fqdn"             # staging sub-domain
+os_src_blog="\$HOME/src/blog"          # root blog repo path
+os_www_live="/var/www/$os_fqdn/live/html"   # root web directory (production)
+os_www=dev"/var/www/$os_fqdn/dev/html"    # root web directory (development)
+os_nginx_user="www-data"               # user who runs nginx & owns /var/www
 
 # Misc
 icon_pass="✔"                          # command return status: 0
