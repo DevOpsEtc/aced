@@ -34,9 +34,9 @@ Apps installed & configured:
 - OpenVPN
 
 **Why Use ACED:** <br>
-Wicked fast deployment of a web server/blog on the cheap. Just how fast? Launch instance, harden server, install/config apps and push to remote repo quicker than you can drink a grande skinny latte! Just how cheap? FREE for a year, can't beat that!
+Wicked fast deployment of a HTTP server/blog on the cheap. Just how fast? Launch instance, harden server, install/config apps and push to remote repo quicker than you can drink a grande skinny latte! Just how cheap? FREE for a year, can't beat that!
 
-Designed for lazy people by a lazy person. Don't build your web server by hand anymore, and stop using the AWS Management Console for every darn EC2 task.
+Designed for lazy people by a lazy person. Don't build your HTTP server by hand anymore, and stop using the AWS Management Console for every darn EC2 task.
 
 **Prerequisites:** <br>
 - Register for free AWS account: <br>

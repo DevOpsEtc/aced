@@ -34,11 +34,11 @@ notify() {
     echo -e "$gray
     1. Fetch your instance's new IP address: $ aced --eip
     2. Go to your domain registrar
-    3. Create a new DNS host record:
+    3. Create 3 DNS host records:
         Type: A Record
-        Host: @
+        Host: (@, www, dev)
         Value: $ec2_ip_last
-        TTL: 5 min (change to automatic or highest after propagation)
+        TTL: 5 min (change to 60 min after propagation)
     4. Wait for DNS propagation
     5. Check status: http://viewdns.info/propagation
     6. During interim, use IP address: http://$ec2_ip_last"

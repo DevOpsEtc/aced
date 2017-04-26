@@ -17,21 +17,7 @@ os_data() {
 }
 
 os_file() {
-  echo -e "\n$green \bRemote: creating file structure for static website... "
-  echo $blue; ssh $ssh_alias " \
-    sudo mkdir -p /var/www/$os_fqdn/{dev,live} \
-    && sudo rm -rf /var/www/html"
-  cmd_check
-
-  echo -e '
-  <style> h1 { text-align: center; color: red; } </style>
-  <h1>Welcome to '"$aced_nm"'!</h1>' \
-    | ssh $ssh_alias " \
-      sudo tee $os_www_live/index.html > /dev/null"
-  cmd_check
-
-  ec2_eip_fetch silent
-  open http://$ec2_ip_last
+  :
 
   # echo -e "\n$green \bRemote: changing ownership: /var/www/$os_fqdn => \
   #   $os_nginx_user... "

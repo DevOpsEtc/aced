@@ -4,7 +4,7 @@
 ##  filename:   config.sh                          ##
 ##  path:       ~/src/deploy/cloud/aws/            ##
 ##  purpose:    default ACED settings              ##
-##  date:       04/24/2017                         ##
+##  date:       04/25/2017                         ##
 ##  repo:       https://github.com/DevOpsEtc/aced  ##
 ##  clone path: ~/aced/app/                        ##
 #####################################################
@@ -65,11 +65,14 @@ os_user="ace"                          # custom username
 os_ssh_port="5280"                     # SSH listen port; only for cleaner logs
 os_hostname="DevOpsEtc"                # hostname; seen in ssh prompt
 os_fqdn="devopsetc.com"                # domain name
+os_fqdn_title="DevOpsEtc.com"          # domain name in title-case
 os_fqdn_dev="dev.$os_fqdn"             # staging sub-domain
+os_fqdn_dev_title="Dev.$os_fqdn_title" # staging sub-domain in title-case
 os_src_blog="\$HOME/src/blog"          # root blog repo path
-os_www_live="/var/www/$os_fqdn/live/html"   # root web directory (production)
-os_www=dev"/var/www/$os_fqdn/dev/html"    # root web directory (development)
+os_www_live="/var/www/$os_fqdn/live"   # root site directory (production)
+os_www_dev="/var/www/$os_fqdn/dev"     # root site directory (development)
 os_nginx_user="www-data"               # user who runs nginx & owns /var/www
+os_nginx_user_dev="$os_user"           # user who has access to dev sub-domain
 
 # Misc
 icon_pass="✔"                          # command return status: 0
