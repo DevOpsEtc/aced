@@ -4,7 +4,7 @@
 ##  filename:   aced.sh                                    ##
 ##  path:       ~/src/deploy/cloud/aws/                    ##
 ##  purpose:    run ACED: Automated EC2 Deploy             ##
-##  date:       04/24/2017                                 ##
+##  date:       05/01/2017                                 ##
 ##  symlink:    $ ln -s ~/src/deploy/cloud/aws ~/aced/app  ##
 ##  repo:       https://github.com/DevOpsEtc/aced          ##
 ##  clone path: ~/aced/app/                                ##
@@ -44,6 +44,8 @@ aced_help() {
     $ aced -s or --status     # show ACED health status
     $ aced -u or --up         # start ACED instance
     $ aced -v or --version    # show ACED version information
+    $ aced -t or --tls        # show certificate & check renewal
+    $ aced -m or --maint      # toggle www maintenance mode
     $ aced --uninstall        # uninstall ACED
   $reset"
 }
@@ -113,19 +115,19 @@ main() {
   . ./ec2.sh                    # EC2 instance related tasks
   . ./ec2_health.sh             # EC2 instance health related tasks
   if [ "$aced_ok" != true ]; then
-    . ./os_sec.sh                 # OS security related tasks
-    . ./os_app.sh                 # OS app related tasks
-    . ./os_misc.sh                # OS one-off tasks
-    . ./os_data.sh                # OS file related tasks
+    . ./os_sec.sh               # OS security related tasks
+    . ./os_app.sh               # OS app related tasks
+    . ./os_misc.sh              # OS one-off tasks
+    . ./os_data.sh              # OS file related tasks
   fi
 
   if [ "$aced_ok" != true ]; then
     clear
-    version       # invoke func to display ACED release info
+    version     # invoke func to display ACED release info
     sleep 2
     echo -e "\n$white \b****  $aced_nm: Install  ****"
     echo -e "\n$green \bCreating file structure... "
-    mkdir -p $aced_root/{config/{backups/{aws,ssh},keys},src/blog}
+    mkdir -p $aced_root/{config/{backups/{aws,ssh},certs,keys},src/blog}
     cmd_check   # invoke func: check last command status code
     iam         # invoke func: check/install IAM group/user/policy
     ec2_sec     # invoke func: check/install EC2 key pair/group/rules
@@ -150,9 +152,10 @@ main() {
     *************************
     ***  $aced_nm Installed!  ***
     *************************"
-    notify eip             # invoke func to display info RE: DNS host record
+    notify eip             # DNS host record info
+    notify cert            # TLS/SSL certificate info
     echo -e "\n$yellow \bEnter $ $aced_nm_low or $ $aced_nm_low --help $reset"
-    exit 0         # exit without error
+    exit 0                 # exit without error
   fi
 
   option=${1//-}  # strip off any prefixed hypens from argument
@@ -163,11 +166,13 @@ main() {
     h|help      ) aced_help         ;; # show ACED help
     l|lip       ) lip_fetch ls      ;; # fetch localhost public IP address
     d|down      ) ec2_stop          ;; # stop instance
+    m|maint     ) www_mm            ;; # toggle www maintenance mode
     r|reboot    ) ec2_reboot        ;; # reboot instance
     u|up        ) ec2_start         ;; # start instance
     s|status    ) ec2_health        ;; # show full AWS/EC2/ACED status
     uninstall   ) uninstall         ;; # remove ACED payload & settings
     v|version   ) version           ;; # show ACED version info
+    t|tls       ) cert_get          ;; # show certificate; check renewal
     *           ) task_menu         ;; # show ACED task menu: wildcard args
   esac
 } # end func: main

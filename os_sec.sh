@@ -4,7 +4,7 @@
 ##  filename:   os_sec.sh                          ##
 ##  path:       ~/src/deploy/cloud/aws/            ##
 ##  purpose:    server security hardening          ##
-##  date:       04/24/2017                         ##
+##  date:       05/01/2017                         ##
 ##  repo:       https://github.com/DevOpsEtc/aced  ##
 ##  clone path: ~/aced/app/                        ##
 #####################################################
@@ -101,15 +101,18 @@ os_ip_tables() {
 
   echo -e "\n$green \bRemote: pushing IPTables rules => \
     \b\b\b\b\b /etc/iptables/rules.v4... "
-  echo $blue; cat ./build/rules.v4 | sed "s/ssh_port/$os_ssh_port/g" \
-    | ssh $ssh_alias "sudo tee /etc/iptables/rules.v4 > /dev/null"
+  echo $blue; cat ./build/rules.v4 \
+    | sed
+      -e '/^######/,/^######/d' \
+      -e '/*filter/,$!d' \
+      -e "s/ssh_port/$os_ssh_port/g" \
+    | ssh $ssh_alias "sudo tee /etc/iptables/rules.v4"
   cmd_check
 
   # ssh -n backgrounds remote command and gives prompt back to script
   echo -e "\n$green \bRemote: restoring IPTables rules... "
   echo $blue; ssh -n $ssh_alias " \
-    sudo iptables-restore < /etc/iptables/rules.v4 \
-    && sudo iptables -S"
+    sudo iptables-restore < /etc/iptables/rules.v4"
   cmd_check
 }
 

@@ -4,7 +4,7 @@
 ##  filename:   aws.sh                             ##
 ##  path:       ~/src/deploy/cloud/aws/            ##
 ##  purpose:    AWS related functions              ##
-##  date:       04/24/2017                         ##
+##  date:       05/01/2017                         ##
 ##  repo:       https://github.com/DevOpsEtc/aced  ##
 ##  clone path: ~/aced/app/                        ##
 #####################################################
@@ -31,11 +31,15 @@ aws_waiter() {
         nc -z $ec2_ip_last $os_ssh_port &>/dev/null
         [[ $? -eq 0 ]] && break
       fi
+    elif [ $1 == "HTTPS" ]; then
+      ssh $ssh_alias "systemctl status nginx | grep 'running' -q"
+      [[ $? -eq 0 ]] && break
     fi
     sleep 2
   done
-
-  echo -e "\n\n$blue$icon_pass $1 Ready"'!'" $reset"
+  if [ $1 != HTTPS ]; then
+    echo -e "\n\n$blue$icon_pass $1 Ready"'!'" $reset"
+  fi
 }
 
 aws_cli_config() {

@@ -4,7 +4,7 @@
 ##  filename:   config.sh                          ##
 ##  path:       ~/src/deploy/cloud/aws/            ##
 ##  purpose:    default ACED settings              ##
-##  date:       04/25/2017                         ##
+##  date:       05/01/2017                         ##
 ##  repo:       https://github.com/DevOpsEtc/aced  ##
 ##  clone path: ~/aced/app/                        ##
 #####################################################
@@ -20,10 +20,12 @@ aced_ok=true                           # ACED install status
 # Localhost File Paths
 aced_root="$HOME/aced"                 # ACED root
 aced_app="$aced_root/app"              # ACED app path
+aced_build="$aced_app/build"           # HTTP content/config path
 aced_src="$aced_root/src"              # ACED data path
 aced_blog="$aced_src/blog"             # ACED repo root path
 aced_config="$aced_root/config"        # ACED config path
 aced_keys="$aced_config/keys"          # ACED key pair path
+aced_certs="$aced_config/certs"        # domain name certificate path
 aced_backups="$aced_config/backups"    # ACED backup path
 aws_config="$HOME/.aws"                # AWS default config path
 ssh_config="$HOME/.ssh"                # SSH default config path
@@ -73,6 +75,8 @@ os_www_live="/var/www/$os_fqdn/live"   # root site directory (production)
 os_www_dev="/var/www/$os_fqdn/dev"     # root site directory (development)
 os_nginx_user="www-data"               # user who runs nginx & owns /var/www
 os_nginx_user_dev="$os_user"           # user who has access to dev sub-domain
+os_certbot_email="Greg@$os_fqdn"       # EFF contact for renewals & issues
+os_cert_issued=true                    # certbot web certificate was issued
 
 # Misc
 icon_pass="✔"                          # command return status: 0

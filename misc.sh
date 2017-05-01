@@ -4,58 +4,16 @@
 ##  filename:   misc.sh                            ##
 ##  path:       ~/src/deploy/cloud/aws/            ##
 ##  purpose:    misc ACED helper tasks             ##
-##  date:       04/24/2017                         ##
+##  date:       05/01/2017                         ##
 ##  repo:       https://github.com/DevOpsEtc/aced  ##
 ##  clone path: ~/aced/app/                        ##
 #####################################################
-
-cmd_check() {
-  exit_code=$?
-  if [ $exit_code -eq 0 ]; then
-    echo -e "\n$blue \b$icon_pass Success! $reset"
-  else
-    echo -e "\n$red \b$icon_fail Last Command Failed: exit code $exit_code \
-    $reset"
-    exit 1
-  fi
-}
-
-notify() {
-  if [[ "$1" == "instance" ]]; then
-    echo -e "\n$red \b*** Running multiple EC2 instances will exceed \
-      \b\b\b\b\b\bfree-tier limit: 750 hours/month ***"
-  elif [[ "$1" == "eip_gist" ]]; then
-    echo -e "\n$yellow \b*** Your instance's EIP will be disassociated \
-    \b\b\b\b\b & released... but a new one will be allocated & associated ***"
-  elif [[ "$1" == "eip" ]]; then
-    ec2_eip_fetch silent
-    echo -e "\n$yellow \b**** $os_fqdn not reachable until after YOU update \
-      \b\b\b\b\b\b\b its DNS host records! **** "
-    echo -e "$gray
-    1. Fetch your instance's new IP address: $ aced --eip
-    2. Go to your domain registrar
-    3. Create 3 DNS host records:
-        Type: A Record
-        Host: (@, www, dev)
-        Value: $ec2_ip_last
-        TTL: 5 min (change to 60 min after propagation)
-    4. Wait for DNS propagation
-    5. Check status: http://viewdns.info/propagation
-    6. During interim, use IP address: http://$ec2_ip_last"
-  fi
-}
-
-argument_check() {
-  # exit ACED with error if no arguments passed when invoking function
-  [[ "$#" -eq 0 ]] || { echo -e "$red\nNo Arguments Passed! $reset"; exit 1; }
-}
 
 aced_cfg_push() {
   argument_check
   for i in "$@"; do
     echo -e "\n$green \bPushing $blue \b$i: ${!i}$green => ACED config..."
-
-    if [ $i == "aced_ok" ]; then
+    if [ $i == "aced_ok" ] || [ $i == "os_cert_issued" ]; then
       sed -i '' "/$i/ s/false/true /" $aced_app/config.sh
       cmd_check
       break
@@ -101,6 +59,107 @@ activity_show() {
   echo $cur_show && echo $cur_show # yes, twice is right
 }
 
+argument_check() {
+  # exit ACED with error if no arguments passed when invoking function
+  [[ "$#" -eq 0 ]] || { echo -e "$red\nNo Arguments Passed! $reset"; exit 1; }
+}
+
+cert_get() {
+  ###################################################
+  ####  Request/install/renew web certificates   ####
+  ###################################################
+
+  if [ "$os_cert_issued" == true ]; then
+    echo -e "\n$green \bCertbot: fetching certificate info... "
+    echo $blue; ssh $ssh_alias "sudo certbot certificates"
+    cmd_check
+  elif [ "$os_cert_issued" == false ]; then
+    echo -e "\n$green \bCertbot: requesting certificate from Let's Encrypt... "
+    echo $blue; ssh -t $ssh_alias "sudo certbot certonly --webroot \
+      -w $os_www_live/html -d $os_fqdn,www.$os_fqdn \
+      -w $os_www_dev/html -d $os_fqdn_dev \
+      --email $os_certbot_email --agree-tos --no-eff-email"
+    cmd_check
+
+    echo -e "\n$green \bRemote: creating 2048-bit DHE key to secure \
+      \b\b\b\bcommunication with HTTP server & Let's Encrypt CA..."
+    echo $blue; ssh $ssh_alias " \
+      sudo openssl dhparam -out /etc/ssl/certs/dhparam.pem 2048"
+    cmd_check
+
+    echo -e "\n$green \bRemote: creating Nginx snippet for SSL directives..."
+    echo -e "ssl_certificate /etc/letsencrypt/live/$os_fqdn/fullchain.pem; \
+      \nssl_certificate_key /etc/letsencrypt/live/$os_fqdn/privkey.pem;" \
+      | ssh $ssh_alias "sudo tee /etc/nginx/snippets/ssl-$os_fqdn.conf"
+    cmd_check
+
+    echo -e "\n$green \bRemote: pushing Nginx snippet for SSL config... "
+    cat ./build/ssl-params.conf \
+      | sed '/^######/,/^######/d' \
+      | ssh $ssh_alias "sudo tee /etc/nginx/snippets/ssl-params.conf \
+        &>/dev/null"
+    cmd_check
+
+    sites=("dev" "live")
+
+    for i in "${sites[@]}"; do
+      [[ "$i" == "live" ]] && fqdn=$os_fqdn
+      [[ "$i" == "dev" ]] && fqdn=$os_fqdn_dev
+
+      echo -e "\n$green \bRemote: Updating server block with TLS/SSL \
+        \b\b\b\b\b\bdirectives for $fqdn..."
+      # e1: kill pre-cert block; ec2: uncomment post-cert block; e3: kill headers
+      ssh $ssh_alias " \
+        sudo sed -i \
+          -e '/pre-cert/,/pre-cert/d' \
+          -e '/post-cert/,/post-cert/{s/^\s*#//g}' \
+          -e '/post-cert/d' \
+        /etc/nginx/sites-available/$fqdn"
+      cmd_check
+    done
+
+    echo -e "\n$green \bRemote: restarting Nginx service... "
+    ssh $ssh_alias "sudo nginx -t &>/dev/null && sudo service nginx reload"
+    cmd_check
+
+    echo -e "\n$green \bRemote: backing up certs for $aced_nm reinstalls \
+      \n\n$blue \b$aced_certs/$(date +%m-%d-%Y_%H-%M)... "
+    rsync -azhe ssh --rsync-path="sudo rsync" \
+      $ssh_alias:/etc/letsencrypt/{archive,live,renewal} \
+      $aced_certs/$(date +%m-%d-%Y_%H-%M)
+    cmd_check
+
+    echo -e "\n$green \bLocalhost: removing cert challenge cruft... "
+    ssh $ssh_alias "sudo rm -rf \
+      /var/www/devopsetc.com/{live/html/.well-known,dev/html/.well-known}"
+    cmd_check
+
+    # crontab for certbot: /etc/cron.d/certbot
+    echo -e "\n$green \remote: creating renew-hook for certbot crontab... "
+    echo -e '#!/bin/sh \n/bin/systemctl reload nginx \nexit 0' \
+      | ssh $ssh_alias " \
+        sudo tee /etc/letsencrypt/renew-hook.d/nginx_reload.sh &>/dev/null \
+        && sudo chmod +x /etc/letsencrypt/renew-hook.d/nginx_reload.sh"
+    cmd_check
+
+    aced_cfg_push os_cert_issued
+
+    echo -e "\n$green \bOpening $fqdn... $reset"
+    ec2_eip_fetch silent && open http://www.$fqdn
+  fi
+} # end func: cert_get
+
+cmd_check() {
+  exit_code=$?
+  if [ $exit_code -eq 0 ]; then
+    echo -e "\n$blue \b$icon_pass Success! $reset"
+  else
+    echo -e "\n$red \b$icon_fail Last Command Failed: exit code $exit_code \
+    $reset"
+    exit 1
+  fi
+}
+
 decision_response() {
   ###################################################
   ####  Display decision/prompt for response     ####
@@ -134,6 +193,55 @@ lip_fetch() {
   echo -e "\n$green \bFetching public IP address for localhost ..."
   localhost_ip=$(curl -s http://checkip.amazonaws.com/)
   cmd_check
+}
+
+known_host_add() {
+  if [ "$1" == "update" ]; then
+    port=$os_ssh_port
+    echo -e "$green \bLocalhost: removing prior EIP from known_hosts... "
+    echo $blue; ssh-keygen -R [$ec2_ip_last]:$port
+    cmd_check
+  else
+    port=22
+  fi
+
+  echo -e "\n$green \bRemote: waiting on SSH port to accept connections... "
+  aws_waiter SSH &
+  activity_show
+
+  # prevents host key verification notice; you initiated it, so legit
+  echo -e "\n$green \bLocalhost: forcing EC2 host (EIP) => known_hosts... "
+  ssh -n -o StrictHostKeyChecking=no $ssh_alias "exit" &>/dev/null
+  cmd_check
+}
+
+notify() {
+  if [[ "$1" == "instance" ]]; then
+    echo -e "\n$red \b*** Running multiple EC2 instances will exceed \
+      \b\b\b\b\b\bfree-tier limit: 750 hours/month *** $reset"
+  elif [[ "$1" == "eip_gist" ]]; then
+    echo -e "\n$yellow \b*** Instance EIP will be disassociated & released, \
+      \b\b\b\b\b\bbut a new one will be allocated & associated at start *** \
+      $reset"
+  elif [[ "$1" == "eip" ]]; then
+    ec2_eip_fetch silent
+    echo -e "\n$yellow \b**** $os_fqdn not reachable until after YOU update \
+      \b\b\b\b\b\b\b its DNS host records! ****  $reset"
+    echo -e "$gray
+    1. Fetch your instance's new IP address: $ aced --eip
+    2. Go to your domain registrar
+    3. Create 3 DNS host records:
+        Type: A Record
+        Host: (@, www, dev)
+        Value: $ec2_ip_last
+        TTL: 5 min (change to 60 min after propagation)
+    4. Wait for DNS propagation
+    5. Check status: http://viewdns.info/propagation/?domain=$os_fqdn
+    6. During interim, use IP address: http://$ec2_ip_last $reset"
+  elif [[ "$1" == "cert" ]]; then
+    echo -e "\n$yellow \b**** No need to wait for full DNS propagation before \
+      \b\b\b\b\b\b\b requesting certificate via $ aced -tls $reset"
+  fi
 }
 
 ssh_alias_create() {
@@ -189,24 +297,20 @@ ssh_alias_create() {
   cmd_check
 } # end func: ssh_alias_create
 
-known_host_add() {
-  if [ "$1" == "update" ]; then
-    port=$os_ssh_port
-    echo -e "$green \bLocalhost: removing prior EIP from known_hosts... "
-    echo $blue; ssh-keygen -R [$ec2_ip_last]:$port
-    cmd_check
-  else
-    port=22
-  fi
+www_mm() {
+  echo -e "\n$green \b$os_fqdn_title: toggling maintenance mode... "
+  ssh $ssh_alias " \
+    sudo sed -i '/return 503/ s/^\s*#/ /; t; /return 503/ s/^\s*/  # /' \
+    /etc/nginx/sites-available/devopsetc.com \
+    && sudo nginx -t &>/dev/null \
+    && sudo service nginx reload"
 
-  echo -e "\n$green \bRemote: waiting on SSH port to accept connections... "
-  aws_waiter SSH &
-  activity_show
+  aws_waiter HTTPS
 
-  # prevents host key verification notice; you initiated it, so legit
-  echo -e "\n$green \bLocalhost: forcing EC2 host (EIP) => known_hosts... "
-  ssh -n -o StrictHostKeyChecking=no $ssh_alias "exit" &>/dev/null
-  cmd_check
+  # fetch current HTTP status
+  http_status=$(curl -s -o /dev/null -I -w "%{http_code}" https://$os_fqdn)
+	[[ $http_status == "503" ]] && mm=on || mm=off
+  echo -e "\n$blue \bMaintenance mode $mm! $reset"
 }
 
 uninstall() {
