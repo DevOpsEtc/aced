@@ -4,7 +4,7 @@
 ##  filename:   ec2_health.sh                      ##
 ##  path:       ~/src/deploy/cloud/aws/            ##
 ##  purpose:    EC2 state & health status          ##
-##  date:       04/24/2017                         ##
+##  date:       05/01/2017                         ##
 ##  repo:       https://github.com/DevOpsEtc/aced  ##
 ##  clone path: ~/aced/app/                        ##
 #####################################################
@@ -62,7 +62,6 @@ ec2_health() {
     [[ $instance_status == "ok" ]] && instance_status="Reachable"
 
     ec2_eip_fetch silent # fetch last EIP
-
     echo -e "\n$green \bFetching IP ping results..."
     if ping -c 1 $ec2_ip_last | grep -q '1 packets received'; then
       cmd_check dash
@@ -146,6 +145,14 @@ ec2_health() {
     [ -f /var/run/reboot-required ] && req_reboot="yes" || req_reboot="no"
     cmd_check
 
+    echo -e "\n$green \bFetching HTTP status code..."
+    http_code=$(curl -s -o /dev/null -w '%{http_code}' https://$os_fqdn)
+    cmd_check
+
+    echo -e "\n$green \bFetching TLS/SSL certificate expiry date..."
+    cert_exp=$(ssh $ssh_alias "sudo certbot certificates 2>/dev/null \
+      | awk '/Expiry/ {print \$6}'")
+    cmd_check
   else
   	msg="Not Reachable"
   	system_status="$msg"
@@ -174,7 +181,7 @@ ec2_health() {
   echo -e "$white \b$aced_nm EC2 Instance: $gray \
     \n______________________________________________________ \
     \nId:$blue\t$ec2_id $gray\tTag:$blue\t$ec2_tag $gray \
-    \nEIP:$blue\t$ec2_ip $gray\tState:$state_color\t$state \
+    \nEIP:$blue\t$ec2_ip_last $gray\t\tState:$state_color\t$state \
     \n$gray \b______________________________________________________
   "
   echo -e "$white \b$aced_nm EC2 System: $gray \
@@ -195,7 +202,12 @@ ec2_health() {
     \nReboot Needed:$blue\t$req_reboot $gray \
     \n______________________________________________________
   "
-
+  echo -e "$white \b$aced_nm EC2 HTTP: $gray \
+    \n______________________________________________________ \
+    \nHTTP Status Code:$blue\t$http_code $gray \
+    \nTLS/SSL Expiry:  $blue\t$cert_exp days $gray \
+    \n______________________________________________________
+  "
   if [ "$1" == "menu" ]; then
     read -n 1 -s -p "$yellow""Press any key to continue "
     clear && clear
