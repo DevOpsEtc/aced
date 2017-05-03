@@ -4,16 +4,17 @@
 ##  filename:   os_app.sh                          ##
 ##  path:       ~/src/deploy/cloud/aws/            ##
 ##  purpose:    install and config apps            ##
-##  date:       05/01/2017                         ##
+##  date:       05/02/2017                         ##
 ##  repo:       https://github.com/DevOpsEtc/aced  ##
 ##  clone path: ~/aced/app/                        ##
 #####################################################
 
 os_app() {
   echo -e "\n$white \b****  OS: App-Related Install Tasks  ****"
-  os_apt_update   # invoke func: update packages lists & native packages
-  os_apt_install  # invoke func: install new packages
-  os_nginx_config # invoke func: config native/newly installed apps
+  os_apt_update       # invoke func: update packages lists & native packages
+  os_apt_install      # invoke func: install new packages
+  os_nginx_config     # invoke func: config HTTP server
+  os_fail2ban_config  # invoke func: config log monitor/ip banner
 }
 
 os_apt_update() {
@@ -58,9 +59,9 @@ os_apt_install() {
 } # end func: os_apt_install
 
 os_nginx_config() {
-  echo -e "\n$white \b****  OS: Nginx Prep & Config  ****"
+  echo -e "\n$white \b****  OS: Nginx Config & HTML Placeholders  ****"
 
-  echo -e "\n$green \bRemote: editing Nginx config... "
+  echo -e "\n$green \bRemote: backing up & editing Nginx config... "
   ssh $ssh_alias " \
     sudo cp /etc/nginx/nginx.conf /etc/nginx/nginx.conf_old \
     && sudo sed -i \
@@ -216,3 +217,66 @@ os_nginx_config() {
   echo -e "\n$green \bOpening live website... $reset"
   ec2_eip_fetch silent && open http://$ec2_ip_last
 } # end func: os_nginx_config
+
+os_fail2ban_config() {
+  echo -e "\n$white \b****  OS: Fail2ban Config & Jail Setup  ****"
+
+  echo -e "\n$green \bRemote: pushing Fail2ban conf to local override... "
+  echo -e "[Definition] \
+    \nloglevel = INFO \
+    \nlogtarget = /var/log/fail2ban.log \
+    \nsyslogsocket = auto \
+    \nsocket = /var/run/fail2ban/fail2ban.sock \
+    \npidfile = /var/run/fail2ban/fail2ban.pid \
+    \ndbfile = /var/lib/fail2ban/fail2ban.sqlite3 \
+    \ndbpurgeage = 86400" \
+    | ssh $ssh_alias "sudo tee /etc/fail2ban/fail2ban.local &>/dev/null"
+  cmd_check
+
+  echo -e "\n$green \bRemote: pushing Fail2ban jail conf to local override... "
+  echo $blue; cat ./build/jail.local \
+    | sed \
+      -e '/^######/,/^######/d' \
+      -e '/[DEFAULT]/,$!d' \
+      -e "s/os_ssh_port/$os_ssh_port/" \
+    | ssh $ssh_alias "sudo tee /etc/fail2ban/jail.local &>/dev/null"
+  cmd_check
+
+  jail_filters=(
+    "nginx-http-auth" # ban requests for auth failures
+    "nginx-badbots"   # ban requests from blacklisted bots
+    "nginx-noscript"  # ban requests for non-used script extensions
+    "nginx-nohome"    # ban requests for www docs in home
+    "nginx-noproxy"   # ban requests for proxy use of website
+    )
+
+  for j in "${jail_filters[@]}"; do
+    echo -e "$green\nRemote: pushing Fail2ban jail filter: $j... "
+    if [ "$j" == "nginx-http-auth" ]; then
+      fail_regex='\\t \ \ \ ^ \\\[error\\\] \\\d+#\\\d+: \\\*\\\d+ no user/pass
+        provided, client: <HOST>, server: \\\S+, request: \"\\\S+ \\\S+
+        HTTP\/\\\d+\\\.\\\d+\", host: \"\\\S+\"\\\s*\$'
+      ssh $ssh_alias "sudo sed -i '/failregex/a "$fail_regex"' \
+      /etc/fail2ban/filter.d/$j.conf &>/dev/null"
+    elif [ "$j" == "nginx-badbots" ]; then
+      ssh $ssh_alias "sudo cp -f \
+        /etc/fail2ban/filter.d/{apache-badbots.conf,$j.conf}"
+    else
+      if [ "$j" == "nginx-noscript" ]; then
+        fail_regex='^<HOST> -.*GET.*(\.php|\.asp|\.exe|\.pl|\.cgi|\.scgi)'
+      elif [ "$j" == "nginx-nohome" ]; then
+        fail_regex='^<HOST> -.*GET .*/~.*'
+      elif [ "$j" == "nginx-noproxy" ]; then
+        fail_regex='^<HOST> -.*GET http.*'
+      fi
+      echo -e "[Definition] \nfailregex = $fail_regex \nignoreregex =" \
+        | ssh $ssh_alias "sudo tee /etc/fail2ban/filter.d/$j.conf &>/dev/null"
+    fi
+    cmd_check
+  done
+
+  echo -e "\n$green \bRemote: restarting Fail2ban service & fetching jails... "
+  echo $blue; ssh $ssh_alias " \
+  sudo service fail2ban restart && sudo fail2ban-client status"
+  cmd_check
+}

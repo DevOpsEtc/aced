@@ -78,7 +78,7 @@ cert_get() {
     echo $blue; ssh -t $ssh_alias "sudo certbot certonly --webroot \
       -w $os_www_live/html -d $os_fqdn,www.$os_fqdn \
       -w $os_www_dev/html -d $os_fqdn_dev \
-      --email $os_certbot_email --agree-tos --no-eff-email"
+      --email $os_user_email --agree-tos --no-eff-email"
     cmd_check
 
     echo -e "\n$green \bRemote: creating 2048-bit DHE key to secure \

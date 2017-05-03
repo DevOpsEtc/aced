@@ -75,7 +75,7 @@ os_www_live="/var/www/$os_fqdn/live"   # root site directory (production)
 os_www_dev="/var/www/$os_fqdn/dev"     # root site directory (development)
 os_nginx_user="www-data"               # user who runs nginx & owns /var/www
 os_nginx_user_dev="$os_user"           # user who has access to dev sub-domain
-os_certbot_email="Greg@$os_fqdn"       # EFF contact for renewals & issues
+os_user_email="Greg@$os_fqdn"          # used for cerbot EFF contact & fail2ban
 os_cert_issued=true                    # certbot web certificate was issued
 
 # Misc
