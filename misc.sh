@@ -256,6 +256,8 @@ os_admin() {
   elif [ $1 == "services" ]; then
     echo $blue; ssh $ssh_alias " \
       systemctl status nginx sshd fail2ban netfilter-persistent --no-page"
+  elif [ $1 == "net_services" ]; then
+    echo $blue; ssh $ssh_alias "sudo netstat -tulpn"
   elif [ $1 == "processes" ]; then
     echo $blue; ssh $ssh_alias " \
       ps aux | grep '[U]SER\|[n]ginx\|[s]shd\|[f]ail2ban'"

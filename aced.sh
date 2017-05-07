@@ -64,6 +64,7 @@ admin_menu() {
     "OS Main Ports"
     "OS Main Processes"
     "OS Main Services"
+    "OS Net Services"
     "OS Package Updates"
     "OS Fail2ban Jails"
     "OS IPTables Drops"
@@ -85,23 +86,24 @@ admin_menu() {
     PS3=$'\n'"$yellow"'Choose task number: '"$reset"
     select admin in "${admin_item[@]}"; do
       case $admin in
-        "Web Maintenance Mode" ) web_mm menu;         break ;;
-        "Web Certificates"     ) os_admin certs;      break ;;
-        "OS Main Logs"         ) os_admin logs;       break ;;
-        "OS Main Ports"        ) os_admin ports;      break ;;
-        "OS Main Processes"    ) os_admin processes;  break ;;
-        "OS Main Services"     ) os_admin services;   break ;;
-        "OS Package Updates"   ) os_admin updates;    break ;;
-        "OS IPTables Rules"    ) os_admin rules;      break ;;
-        "OS IPTables Drops"    ) os_admin drops;      break ;;
-        "OS Fail2ban Jails"    ) os_admin jails;      break ;;
-        "DNS Host Records"     ) os_admin dns;        break ;;
-        "EC2 Sec Group Rules"  ) ec2_rule_list;       break ;;
-        "Rotate IAM Keys"      ) iam_keys_rotate;     break ;;
-        "Rotate EC2 Keys"      ) ec2_keypair;         break ;;
-        "Rotate EC2 EIP"       ) ec2_eip_rotate;      break ;;
-        "⇑ Task Menu"          ) task_menu;           break ;;
-        "✘ QUIT"               ) return;                    ;;
+        "Web Maintenance Mode" ) web_mm menu;           break ;;
+        "Web Certificates"     ) os_admin certs;        break ;;
+        "OS Main Logs"         ) os_admin logs;         break ;;
+        "OS Main Ports"        ) os_admin ports;        break ;;
+        "OS Main Processes"    ) os_admin processes;    break ;;
+        "OS Main Services"     ) os_admin services;     break ;;
+        "OS Net Services"      ) os_admin net_services; break ;;
+        "OS Package Updates"   ) os_admin updates;      break ;;
+        "OS IPTables Rules"    ) os_admin rules;        break ;;
+        "OS IPTables Drops"    ) os_admin drops;        break ;;
+        "OS Fail2ban Jails"    ) os_admin jails;        break ;;
+        "DNS Host Records"     ) os_admin dns;          break ;;
+        "EC2 Sec Group Rules"  ) ec2_rule_list;         break ;;
+        "Rotate IAM Keys"      ) iam_keys_rotate;       break ;;
+        "Rotate EC2 Keys"      ) ec2_keypair;           break ;;
+        "Rotate EC2 EIP"       ) ec2_eip_rotate;        break ;;
+        "⇑ Task Menu"          ) task_menu;             break ;;
+        "✘ QUIT"               ) return;                      ;;
       esac
     done
   done

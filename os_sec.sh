@@ -121,6 +121,13 @@ os_hard_misc() {
   echo "tmpfs /run/shm tmpfs defaults,noexec,nosuid 0 0" \
     | ssh $ssh_alias "sudo tee -a /etc/fstab > /dev/null"
   cmd_check
+
+  echo -e "\n$green \bRemote: preventing IP spoofing... "
+  ssh $ssh_alias " \
+    sudo sed -i \
+      -e '/order/ s/hosts,bind/bind,hosts/' \
+      -e 's/multi on/nospoof on/' \
+    /etc/host.conf"
 }
 
 os_hard_act() {
