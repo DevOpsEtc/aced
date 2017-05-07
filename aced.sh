@@ -4,7 +4,7 @@
 ##  filename:   aced.sh                                    ##
 ##  path:       ~/src/deploy/cloud/aws/                    ##
 ##  purpose:    run ACED: Automated EC2 Deploy             ##
-##  date:       05/01/2017                                 ##
+##  date:       05/03/2017                                 ##
 ##  symlink:    $ ln -s ~/src/deploy/cloud/aws ~/aced/app  ##
 ##  repo:       https://github.com/DevOpsEtc/aced          ##
 ##  clone path: ~/aced/app/                                ##
@@ -35,59 +35,104 @@ aced_help() {
   echo -e "\n$yellow
     ACED Commands: \n
     $ aced                    # show ACED task menu
+    $ aced -a or --admin      # show ACED admin task menu
     $ aced -c or --connect    # connect to ACED via SSH
     $ aced -d or --down       # stop ACED instance
     $ aced -e or --eip        # fetch ACED public IP address
     $ aced -h or --help       # show ACED help (this list)
-    $ aced -l or --lip        # fetch localhost public IP address
+    $ aced -i or --ip         # fetch localhost public IP address
+    $ aced -l or --log        # fetch remote OS tailed logs
+    $ aced -m or --maint      # toggle www maintenance mode
     $ aced -r or --reboot     # reboot ACED instance
     $ aced -s or --status     # show ACED health status
     $ aced -u or --up         # start ACED instance
     $ aced -v or --version    # show ACED version information
-    $ aced -t or --tls        # show certificate & check renewal
-    $ aced -m or --maint      # toggle www maintenance mode
+    $ aced -t or --tls        # request new/revoke old web certificate
     $ aced --uninstall        # uninstall ACED
   $reset"
 }
 
-task_menu() {
-  ##########################################################
-  ####  Display AWS IAM & EC2 task menu  ###################
-  ##########################################################
+admin_menu() {
+  ec2_state # check state; bail if not running
+  [[ "$state" != "Running" ]] && { echo -e "\n$state_msg"; return; }
+
   # menu options array
+  admin_item=(
+    "Web Maintenance Mode"
+    "Web Certificates"
+    "OS Main Logs"
+    "OS Main Ports"
+    "OS Main Processes"
+    "OS Main Services"
+    "OS Package Updates"
+    "OS Fail2ban Jails"
+    "OS IPTables Drops"
+    "OS IPTables Rules"
+    "DNS Host Records"
+    "EC2 Sec Group Rules"
+    "Rotate IAM Keys"
+    "Rotate EC2 Keys"
+    "Rotate EC2 EIP"
+    "⇑ Task Menu"
+    "✘ QUIT"
+  )
+
+  while true; do  # keep redrawing menu until QUIT
+    clear
+    unset COLUMNS  # force default menu layout
+    echo -e "\n\n$white \b$aced_nm Admin Tasks $gray \
+    \n_______________________________________________________________________"
+    PS3=$'\n'"$yellow"'Choose task number: '"$reset"
+    select admin in "${admin_item[@]}"; do
+      case $admin in
+        "Web Maintenance Mode" ) web_mm menu;         break ;;
+        "Web Certificates"     ) os_admin certs;      break ;;
+        "OS Main Logs"         ) os_admin logs;       break ;;
+        "OS Main Ports"        ) os_admin ports;      break ;;
+        "OS Main Processes"    ) os_admin processes;  break ;;
+        "OS Main Services"     ) os_admin services;   break ;;
+        "OS Package Updates"   ) os_admin updates;    break ;;
+        "OS IPTables Rules"    ) os_admin rules;      break ;;
+        "OS IPTables Drops"    ) os_admin drops;      break ;;
+        "OS Fail2ban Jails"    ) os_admin jails;      break ;;
+        "DNS Host Records"     ) os_admin dns;        break ;;
+        "EC2 Sec Group Rules"  ) ec2_rule_list;       break ;;
+        "Rotate IAM Keys"      ) iam_keys_rotate;     break ;;
+        "Rotate EC2 Keys"      ) ec2_keypair;         break ;;
+        "Rotate EC2 EIP"       ) ec2_eip_rotate;      break ;;
+        "⇑ Task Menu"          ) task_menu;           break ;;
+        "✘ QUIT"               ) return;                    ;;
+      esac
+    done
+  done
+} # end func: admin_menu
+
+task_menu() {
   task_item=(
     "Connect $aced_nm"
     "Reboot $aced_nm"
-    "EC2 Health Status"
+    "$aced_nm Health"
     "Stop $aced_nm"
     "Start $aced_nm"
-    "EC2 IP Address"
-    "EC2 Group Rules"
-    "Rotate IAM Keys"
-    "Rotate EC2 Keypair"
-    "Rotate EC2 EIP"
-    "QUIT"
+    "⇓ Admin Menu"
+    "✘ QUIT"
   )
 
-  clear
-  while true; do  # keep redrawing menu until QUIT
-    # COLUMNS=20  # force vertical menu layout
+  while true; do
+    clear
+    COLUMNS=20 # force vertical menu layout
     echo -e "\n\n$white \b$aced_nm Tasks $gray \
-      \n______________________________________________________"
+      \n_______________"
     PS3=$'\n'"$yellow"'Choose task number: '"$reset"
     select task in "${task_item[@]}"; do
       case $task in
-        "Connect $aced_nm"   ) ec2_connect;       break ;;
-        "Reboot $aced_nm"    ) ec2_reboot;        break ;;
-        "EC2 Health Status"  ) ec2_health menu;   break ;;
-        "Stop $aced_nm"      ) ec2_stop;          break ;;
-        "Start $aced_nm"     ) ec2_start;         break ;;
-        "EC2 IP Address"     ) ec2_eip_fetch ls;  break ;;
-        "EC2 Group Rules"    ) ec2_rule_list;     break ;;
-        "Rotate IAM Keys"    ) iam_keys_rotate;   break ;;
-        "Rotate EC2 Keypair" ) ec2_keypair;       break ;;
-        "Rotate EC2 EIP"     ) ec2_eip_rotate;    break ;;
-        "QUIT"               ) exit 0;                  ;;
+        "Connect $aced_nm"   ) ec2_connect menu;  break ;;
+        "Reboot $aced_nm"    ) ec2_reboot menu;   break ;;
+        "$aced_nm Health"    ) ec2_health menu;   break ;;
+        "Stop $aced_nm"      ) ec2_stop menu;     break ;;
+        "Start $aced_nm"     ) ec2_start menu;    break ;;
+        "⇓ Admin Menu"       ) admin_menu;        break ;;
+        "✘ QUIT"             ) return;                  ;;
       esac
     done
   done
@@ -118,7 +163,6 @@ main() {
     . ./os_sec.sh               # OS security related tasks
     . ./os_app.sh               # OS app related tasks
     . ./os_misc.sh              # OS one-off tasks
-    . ./os_data.sh              # OS file related tasks
   fi
 
   if [ "$aced_ok" != true ]; then
@@ -135,7 +179,6 @@ main() {
     os_sec      # invoke func: create user/push key/harden on OS
     os_app      # invoke func: update/install/config apps on OS
     os_misc     # invoke func: do one-off tasks on OS
-    os_data     # invoke func: deployment tasks on OS
     # os_hard_act # invoke func: lock default OS account; kill password-less sudo
     ec2_reboot  # invoke func: cross fingers & reboot EC2 instance
 
@@ -161,18 +204,20 @@ main() {
   option=${1//-}  # strip off any prefixed hypens from argument
 
   case $option in  # ACED parameter conditionals; bypass ACED task menu
+    a|admin     ) admin_menu        ;; # show ACED admin task menu
     c|connect   ) ec2_connect       ;; # access instance via SSH
+    d|down      ) ec2_stop          ;; # stop instance
     e|eip       ) ec2_eip_fetch ls  ;; # fetch public IP address
     h|help      ) aced_help         ;; # show ACED help
-    l|lip       ) lip_fetch ls      ;; # fetch localhost public IP address
-    d|down      ) ec2_stop          ;; # stop instance
-    m|maint     ) www_mm            ;; # toggle www maintenance mode
+    i|ip        ) ip_fetch ls       ;; # fetch localhost public IP address
+    l|log       ) os_admin logs     ;; # fetch remote OS tailed logs
+    m|maint     ) web_mm            ;; # toggle www maintenance mode
     r|reboot    ) ec2_reboot        ;; # reboot instance
     u|up        ) ec2_start         ;; # start instance
     s|status    ) ec2_health        ;; # show full AWS/EC2/ACED status
     uninstall   ) uninstall         ;; # remove ACED payload & settings
     v|version   ) version           ;; # show ACED version info
-    t|tls       ) cert_get          ;; # show certificate; check renewal
+    t|tls       ) cert_get          ;; # request new/revoke old web certificate
     *           ) task_menu         ;; # show ACED task menu: wildcard args
   esac
 } # end func: main

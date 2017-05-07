@@ -4,7 +4,7 @@
 ##  filename:   os_app.sh                          ##
 ##  path:       ~/src/deploy/cloud/aws/            ##
 ##  purpose:    install and config apps            ##
-##  date:       05/02/2017                         ##
+##  date:       05/07/2017                         ##
 ##  repo:       https://github.com/DevOpsEtc/aced  ##
 ##  clone path: ~/aced/app/                        ##
 #####################################################
@@ -21,17 +21,19 @@ os_apt_update() {
   echo -e "\n$green \bRemote: adding PPA, updating app list & upgrading \
     \b\b\b\b\b native apps/dependencies... "
   echo $blue; ssh -t $ssh_alias " \
-    sudo DEBIAN_FRONTEND=noninteractive apt-get -qy install grub-pc \
-    && sudo DEBIAN_FRONTEND=noninteractive add-apt-repository \
+    sudo DEBIAN_FRONTEND=noninteractive apt -qy install grub-pc \
+    && sudo DEBIAN_FRONTEND=noninteractive add-apt-repository -y\
       ppa:certbot/certbot \
-    && sudo DEBIAN_FRONTEND=noninteractive apt-get -qy \
-    -o DPkg::options::="--force-confdef" -o DPkg::options::="--force-confold" \
+    && sudo DEBIAN_FRONTEND=noninteractive apt -qy \
+      -o DPkg::options::=\"--force-confdef\" \
+      -o DPkg::options::=\"--force-confold\" \
     update  \
       --allow-downgrades \
       --allow-remove-essential \
       --allow-change-held-packages \
-    && sudo DEBIAN_FRONTEND=noninteractive apt-get -qy \
-    -o DPkg::options::="--force-confdef" -o DPkg::options::="--force-confold" \
+    && sudo DEBIAN_FRONTEND=noninteractive apt -qy \
+      -o DPkg::options::=\"--force-confdef\" \
+      -o DPkg::options::=\"--force-confold\" \
     dist-upgrade \
       --allow-downgrades \
       --allow-remove-essential \
@@ -53,7 +55,7 @@ os_apt_install() {
   for i in "${install_pkg[@]}"; do
     echo -e "\n$green \bRemote: installing app: $i... "
     echo $blue; ssh -t $ssh_alias " \
-      sudo DEBIAN_FRONTEND=noninteractive apt-get -qq install $i"
+      sudo DEBIAN_FRONTEND=noninteractive apt -qq install $i"
     cmd_check
   done
 } # end func: os_apt_install
@@ -63,13 +65,13 @@ os_nginx_config() {
 
   echo -e "\n$green \bRemote: backing up & editing Nginx config... "
   ssh $ssh_alias " \
-    sudo cp /etc/nginx/nginx.conf /etc/nginx/nginx.conf_old \
+    sudo cp -f /etc/nginx/{nginx.conf,conf.d/$os_fqdn.conf} \
     && sudo sed -i \
       -e '/server_tokens /s/.*# /\t/' \
       -e '/server_names_hash/ s/.*# /\t/' \
       -e '/server_names_hash/ s/64/128/' \
       -e '/#mail/,/#\}/d' \
-      /etc/nginx/nginx.conf"
+      /etc/nginx/conf.d/$os_fqdn.conf"
   cmd_check
 
   echo -e "\n$green \bRemote: disabling default server block & removing \
@@ -92,16 +94,17 @@ os_nginx_config() {
       fqdn_title=$os_fqdn_title
       fqdn=$os_fqdn
       srv_names="$fqdn www.$fqdn"
+      cmd="\$ curl -Is --http2 https:\/\/www.$fqdn"
     elif [ "$i" == "dev" ]; then
       doc_root=$os_www_dev/html
       doc_root_esc="\/var\/www\/$os_fqdn\/dev\/html"
       fqdn_title=$os_fqdn_dev_title
       fqdn=$os_fqdn_dev
       srv_names=$fqdn
+      cmd="\$ curl -Is --http2 https:\/\/$fqdn"
     fi
 
     html_pages=("index" "503" "404" "401")
-    cmd="\$ curl -Is --http2 https:\/\/www.$os_fqdn"
 
     for h in "${html_pages[@]}"; do
       if [ "$h" == "index" ]; then
@@ -155,6 +158,7 @@ os_nginx_config() {
         -e '/## pre-cert/,$!d' \
         -e "s/srv_names/$srv_names/g" \
         -e "s/os_fqdn/$os_fqdn/" \
+        -e "s/fqdn/$fqdn/" \
         -e "s/doc_root/$doc_root_esc/" \
       | ssh $ssh_alias " \
       sudo tee /etc/nginx/sites-available/$fqdn > /dev/null \
@@ -166,8 +170,9 @@ os_nginx_config() {
       # e1: kill dev site block; e3: kill header
       ssh $ssh_alias " \
         sudo sed -i \
-          -e '/## dev site/,/## dev site/d' \
-          -e '/## live site/d' \
+          -e '/post-cert-dev/,/post-cert-dev/d' \
+          -e '/dev site/,/dev site/d' \
+          -e '/live site/d' \
         /etc/nginx/sites-available/$fqdn"
       cmd_check
     elif [ "$i" == "dev" ]; then
@@ -175,6 +180,7 @@ os_nginx_config() {
       ssh $ssh_alias " \
         sudo sed -i \
           -e '/listen/ s/ default_server//' \
+          -e '/post-cert-live/,/post-cert-live/d' \
           -e '/## live site/,/## live site/d' \
           -e '/## dev site/d' \
         /etc/nginx/sites-available/$fqdn"

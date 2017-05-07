@@ -4,7 +4,7 @@
 ##  filename:   ec2_health.sh                      ##
 ##  path:       ~/src/deploy/cloud/aws/            ##
 ##  purpose:    EC2 state & health status          ##
-##  date:       05/01/2017                         ##
+##  date:       05/07/2017                         ##
 ##  repo:       https://github.com/DevOpsEtc/aced  ##
 ##  clone path: ~/aced/app/                        ##
 #####################################################
@@ -141,12 +141,12 @@ ec2_health() {
     && rel_code=$(ssh $ssh_alias "lsb_release -c | awk '{print \$2}'")
     cmd_check
 
-    echo -e "\n$blue \bFetching required reboot..."
+    echo -e "\n$green \bFetching required reboot..."
     [ -f /var/run/reboot-required ] && req_reboot="yes" || req_reboot="no"
     cmd_check
 
     echo -e "\n$green \bFetching HTTP status code..."
-    http_code=$(curl -s -o /dev/null -w '%{http_code}' https://$os_fqdn)
+    http_code=$(curl -s -o /dev/null -w '%{http_code}' https://www.$os_fqdn)
     cmd_check
 
     echo -e "\n$green \bFetching TLS/SSL certificate expiry date..."
@@ -208,8 +208,6 @@ ec2_health() {
     \nTLS/SSL Expiry:  $blue\t$cert_exp days $gray \
     \n______________________________________________________
   "
-  if [ "$1" == "menu" ]; then
-    read -n 1 -s -p "$yellow""Press any key to continue "
-    clear && clear
-  fi
+  [[ "$1" == "menu" ]] \
+  && read -n 1 -s -p "$yellow""Press any key to continue "; clear
 } # end func: ec2_health

@@ -4,7 +4,7 @@
 ##  filename:   misc.sh                            ##
 ##  path:       ~/src/deploy/cloud/aws/            ##
 ##  purpose:    misc ACED helper tasks             ##
-##  date:       05/01/2017                         ##
+##  date:       05/07/2017                         ##
 ##  repo:       https://github.com/DevOpsEtc/aced  ##
 ##  clone path: ~/aced/app/                        ##
 #####################################################
@@ -66,15 +66,24 @@ argument_check() {
 
 cert_get() {
   ###################################################
-  ####  Request/install/renew web certificates   ####
+  ####  Request/revoke web certificates          ####
   ###################################################
-
   if [ "$os_cert_issued" == true ]; then
     echo -e "\n$green \bCertbot: fetching certificate info... "
     echo $blue; ssh $ssh_alias "sudo certbot certificates"
-    cmd_check
+    decision_response Revoke web certificates?
+    if [[ "$response" =~ [yY] ]]; then
+      echo -e "\n$green \bCertbot: revoking web certificates... "
+      echo $blue; ssh -t $ssh_alias " \
+        sudo certbot revoke \
+          --cert-path /etc/letsencrypt/live/$os_fqdn/cert.pem \
+        && sudo certbot delete --cert-name $os_fqdn"
+      os_cert_issued=false
+      cert_get
+    fi
   elif [ "$os_cert_issued" == false ]; then
-    echo -e "\n$green \bCertbot: requesting certificate from Let's Encrypt... "
+    echo -e "\n$green \bCertbot: requesting web certificates from \
+      \b\b\b\b\b\bLet's Encrypt... "
     echo $blue; ssh -t $ssh_alias "sudo certbot certonly --webroot \
       -w $os_www_live/html -d $os_fqdn,www.$os_fqdn \
       -w $os_www_dev/html -d $os_fqdn_dev \
@@ -82,22 +91,9 @@ cert_get() {
     cmd_check
 
     echo -e "\n$green \bRemote: creating 2048-bit DHE key to secure \
-      \b\b\b\bcommunication with HTTP server & Let's Encrypt CA..."
+      \b\b\b\b\b\bcommunication with HTTP server & Let's Encrypt CA..."
     echo $blue; ssh $ssh_alias " \
       sudo openssl dhparam -out /etc/ssl/certs/dhparam.pem 2048"
-    cmd_check
-
-    echo -e "\n$green \bRemote: creating Nginx snippet for SSL directives..."
-    echo -e "ssl_certificate /etc/letsencrypt/live/$os_fqdn/fullchain.pem; \
-      \nssl_certificate_key /etc/letsencrypt/live/$os_fqdn/privkey.pem;" \
-      | ssh $ssh_alias "sudo tee /etc/nginx/snippets/ssl-$os_fqdn.conf"
-    cmd_check
-
-    echo -e "\n$green \bRemote: pushing Nginx snippet for SSL config... "
-    cat ./build/ssl-params.conf \
-      | sed '/^######/,/^######/d' \
-      | ssh $ssh_alias "sudo tee /etc/nginx/snippets/ssl-params.conf \
-        &>/dev/null"
     cmd_check
 
     sites=("dev" "live")
@@ -112,14 +108,14 @@ cert_get() {
       ssh $ssh_alias " \
         sudo sed -i \
           -e '/pre-cert/,/pre-cert/d' \
-          -e '/post-cert/,/post-cert/{s/^\s*#//g}' \
+          -e '/post-cert/,/post-cert/{s/^# //g}' \
           -e '/post-cert/d' \
         /etc/nginx/sites-available/$fqdn"
       cmd_check
     done
 
     echo -e "\n$green \bRemote: restarting Nginx service... "
-    ssh $ssh_alias "sudo nginx -t &>/dev/null && sudo service nginx reload"
+    ssh $ssh_alias "sudo nginx -t &>/dev/null && sudo service nginx restart"
     cmd_check
 
     echo -e "\n$green \bRemote: backing up certs for $aced_nm reinstalls \
@@ -129,18 +125,17 @@ cert_get() {
       $aced_certs/$(date +%m-%d-%Y_%H-%M)
     cmd_check
 
-    echo -e "\n$green \bLocalhost: removing cert challenge cruft... "
-    ssh $ssh_alias "sudo rm -rf \
-      /var/www/devopsetc.com/{live/html/.well-known,dev/html/.well-known}"
+    echo -e "\n$green \bLocalhost: removing certificate cruft... "
+    ssh $ssh_alias " \sudo rm -rf \
+      /var/www/devopsetc.com/{live/html/.well-known,dev/html/.well-known} \
+      && sudo rm -f /etc/cron.d/cerbot"
     cmd_check
 
-    # crontab for certbot: /etc/cron.d/certbot
-    echo -e "\n$green \remote: creating renew-hook for certbot crontab... "
-    echo -e '#!/bin/sh \n/bin/systemctl reload nginx \nexit 0' \
-      | ssh $ssh_alias " \
-        sudo tee /etc/letsencrypt/renew-hook.d/nginx_reload.sh &>/dev/null \
-        && sudo chmod +x /etc/letsencrypt/renew-hook.d/nginx_reload.sh"
-    cmd_check
+    echo -e "\n$green \Remote: creating cron job for certbot renewal... "
+    str_1='52 0,12 * * * root /usr/bin/certbot renew --renew-hook'
+    str_2='"systemctl reload nginx"'
+    echo -e "$str_1 $str_2 | /usr/bin/logger -t cert_renew_cron" \
+      | ssh $ssh_alias "sudo tee /etc/cron.d/cert_renew &>/dev/null"
 
     aced_cfg_push os_cert_issued
 
@@ -173,14 +168,14 @@ decision_response() {
   while true; do
     read -n 1 -p $'\n'"$yellow""$decision (Y/N)  " response
     case $response in
-      y|Y ) echo; break ;;
-      n|N ) echo; break ;;
+      y|Y ) echo $reset; break ;;
+      n|N ) echo $reset; break ;;
       *   ) echo; echo -e "\n$red \bInvalid Input! $reset" ;;
     esac
   done
 }
 
-lip_fetch() {
+ip_fetch() {
   if [ "$1" == "last" ] || [ "$1" == "match" ] || [ "$1" == "ls" ]; then
     # strip any leading zeros from IP octets to prevent potential errors
     lip_last=$(echo $localhost_ip \
@@ -221,8 +216,8 @@ notify() {
       \b\b\b\b\b\bfree-tier limit: 750 hours/month *** $reset"
   elif [[ "$1" == "eip_gist" ]]; then
     echo -e "\n$yellow \b*** Instance EIP will be disassociated & released, \
-      \b\b\b\b\b\bbut a new one will be allocated & associated at start *** \
-      $reset"
+      \b\b\b\b\b\band a new one will be allocated & associated. YOU'LL need \
+      \b\b\b\b\b\to update your domain's DNS host records! *** $reset"
   elif [[ "$1" == "eip" ]]; then
     ec2_eip_fetch silent
     echo -e "\n$yellow \b**** $os_fqdn not reachable until after YOU update \
@@ -235,14 +230,72 @@ notify() {
         Host: (@, www, dev)
         Value: $ec2_ip_last
         TTL: 5 min (change to 60 min after propagation)
-    4. Wait for DNS propagation
-    5. Check status: http://viewdns.info/propagation/?domain=$os_fqdn
-    6. During interim, use IP address: http://$ec2_ip_last $reset"
+    4. Wait on DNS propagation: \
+      \b\b\b\b\b\bhttp://viewdns.info/propagation/?domain=$os_fqdn"
   elif [[ "$1" == "cert" ]]; then
-    echo -e "\n$yellow \b**** No need to wait for full DNS propagation before \
-      \b\b\b\b\b\b\b requesting certificate via $ aced -tls $reset"
+    echo -e "\n$yellow \b**** Final Step: request TLS web certificate from \
+      \b\b\b\b\b\bLet's Encrypt... $ aced --tls **** $reset"
   fi
 }
+
+os_admin() {
+  if [ $1 == "rules" ]; then
+    echo $blue; ssh $ssh_alias "sudo iptables -L -nv --line-numbers"
+  elif [ $1 == "jails" ]; then
+    echo $blue; ssh $ssh_alias "jails=(\$(sudo fail2ban-client status \
+      | awk '/Jail list/ {gsub(/,/,\"\");for(i=4;i<=NF;++i)print \$i}')) \
+    && for j in \${jails[@]}; do echo; sudo fail2ban-client status \$j; done"
+  elif [ $1 == "certs" ]; then
+    echo -e "\n$green \bCertbot: fetching certificate info... "
+    echo $blue; ssh $ssh_alias "sudo certbot certificates"
+  elif [ $1 == "dns" ]; then
+    echo $blue; dig any $os_fqdn
+  elif [ $1 == "drops" ]; then
+    echo $blue; ssh $ssh_alias " \
+      sudo cat /var/log/syslog | awk '/IPT_DROP/ {print \$0,\"\n\"}'"
+  elif [ $1 == "services" ]; then
+    echo $blue; ssh $ssh_alias " \
+      systemctl status nginx sshd fail2ban netfilter-persistent --no-page"
+  elif [ $1 == "processes" ]; then
+    echo $blue; ssh $ssh_alias " \
+      ps aux | grep '[U]SER\|[n]ginx\|[s]shd\|[f]ail2ban'"
+  elif [ $1 == "ports" ]; then
+    echo $blue; ssh $ssh_alias "netstat -nlt | grep ':80\|:443\|:$os_ssh_port'"
+  elif [ $1 == "updates" ]; then
+    echo -e "\n$green \bRemote: Updating package lists... $blue\n"
+    ssh $ssh_alias "sudo apt update -q 2> /dev/null"
+    updates=$(ssh $ssh_alias "apt list --upgradable 2> /dev/null")
+    if [ $updates != "Listing..." ]; then
+      echo -e "\n$green \bRemote: Checking for app updates... $blue\n"
+      ssh $ssh_alias "apt list --upgradable 2> /dev/null"
+      decision_response Upgrade all packages?
+      if [[ "$response" =~ [yY] ]]; then
+        echo $blue; ssh $ssh_alias " \
+          sudo DEBIAN_FRONTEND=noninteractive apt-get -qy \
+            -o DPkg::options::=\"--force-confdef\" \
+            -o DPkg::options::=\"--force-confold\" \
+          dist-upgrade \
+            --allow-downgrades \
+            --allow-remove-essential \
+            --allow-change-held-packages"
+      fi
+    fi
+  elif [ $1 == "logs" ]; then
+    logs=(
+      "syslog"
+      "auth.log"
+      "fail2ban.log"
+      "nginx/error.log"
+      "nginx/access.log"
+    )
+    for l in "${logs[@]}"; do
+    	echo -e "\n$green \bRemote: fetching tailed log: /var/log/$l... "
+    	echo $blue; ssh $ssh_alias "sudo tail /var/log/$l"
+    done
+  fi
+  cmd_check
+  read -n 1 -s -p $'\n'"$yellow""Press any key to continue "; clear
+} # end func: os_admin
 
 ssh_alias_create() {
   if [ "$1" == "update" ]; then
@@ -297,7 +350,7 @@ ssh_alias_create() {
   cmd_check
 } # end func: ssh_alias_create
 
-www_mm() {
+web_mm() {
   echo -e "\n$green \b$os_fqdn_title: toggling maintenance mode... "
   ssh $ssh_alias " \
     sudo sed -i '/return 503/ s/^\s*#/ /; t; /return 503/ s/^\s*/  # /' \
@@ -311,6 +364,9 @@ www_mm() {
   http_status=$(curl -s -o /dev/null -I -w "%{http_code}" https://$os_fqdn)
 	[[ $http_status == "503" ]] && mm=on || mm=off
   echo -e "\n$blue \bMaintenance mode $mm! $reset"
+
+  [[ "$1" == "menu" ]] \
+    && read -n 1 -s -p $'\n'"$yellow""Press any key to continue "; clear
 }
 
 uninstall() {

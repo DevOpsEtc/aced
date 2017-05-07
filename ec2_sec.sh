@@ -4,7 +4,7 @@
 ##  filename:   ec2_sec.sh                         ##
 ##  path:       ~/src/deploy/cloud/aws/            ##
 ##  purpose:    EC2 security tasks                 ##
-##  date:       04/24/2017                        ##
+##  date:       05/06/2017                         ##
 ##  repo:       https://github.com/DevOpsEtc/aced  ##
 ##  clone path: ~/aced/app/                        ##
 #####################################################
@@ -71,8 +71,7 @@ ec2_rule_list() {
   else
     echo -e "\n$blue \bNo EC2 Security Groups Found"
   fi
-  read -n 1 -s -p $'\n'"$yellow""Press any key to continue "
-  clear && clear
+  read -n 1 -s -p $'\n'"$yellow""Press any key to continue "; clear
 } # end func: ec2_rule_list
 
 ec2_keypair() {
@@ -256,7 +255,7 @@ ec2_group_create() {
 
 ec2_rule_revoke() {
   argument_check
-  lip_fetch last
+  ip_fetch last
   if [ "$1" == "inbound_22" ]; then
     echo -e "\n$green \bEC2: revoking inbound rule (EC2 <= localhost): \
     \n\n$blue \bPort: 22 (TCP: SSH) \
@@ -318,15 +317,20 @@ ec2_rule_revoke() {
 
 ec2_rule_add() {
   if [ "$#" -eq 0 ] && [ "$aced_ok" != true ]; then
-    lip_fetch last # invoke func: fetch raw localhost IP
+    ip_fetch last # invoke func: fetch raw localhost IP
 
-    echo -e "\n$green EC2: Authorizing Ingress Rules (EC2 <= localhost):
-    $blue
-    TCP \t(SSH) \t\tport 22 \tcidr: $localhost_ip/32 (temporary)
-    TCP \t(SSH) \t\tport $os_ssh_port \tcidr: $localhost_ip/32
-    ICMP \t(Echo) \t\tport 8-1 \tcidr: 0.0.0.0/0
-    TCP \t(HTTP) \t\tport 80 \tcider: 0.0.0.0/0, ::/0 (IPv4/IPv6)
-    TCP \t(HTTPS) \tport 443 \tcider: 0.0.0.0/0, ::/0 (IPv4/IPv6)"
+    echo -e "$green\nEC2: Authorizing Ingress Rules (EC2 <= localhost): $blue\n
+    ICMP (echo)   port 8-1    cidr: 0.0.0.0/0
+    TCP  (SSH)    port 22     cidr: $localhost_ip/32 $red (temporary) $blue
+    TCP  (SSH)    port $os_ssh_port   cidr: $localhost_ip/32
+    TCP  (HTTP)   port 80     cidr: 0.0.0.0/0, ::/0 (IPv4/IPv6)
+    TCP  (HTTPS)  port 443    cidr: 0.0.0.0/0, ::/0 (IPv4/IPv6)
+    TCP  (rsync)  port 873    cidr: 0.0.0.0/0, ::/0 (IPv4/IPv6)
+    TCP  (whois)  port 43     cidr: 0.0.0.0/0, ::/0 (IPv4/IPv6)
+    TCP  (DNS)    port 53     cidr: 0.0.0.0/0, ::/0 (IPv4/IPv6)
+    UDP  (DNS)    port 53     cidr: 0.0.0.0/0, ::/0 (IPv4/IPv6)
+    UDP  (NTP)    port 123    cidr: 0.0.0.0/0, ::/0 (IPv4/IPv6)
+    UDP  (DHCP)   port 67:68  cidr: 0.0.0.0/0, ::/0 (IPv4/IPv6)"
     aws ec2 authorize-security-group-ingress \
       --group-id $ec2_group_id \
       --ip-permissions '[
@@ -357,15 +361,56 @@ ec2_rule_add() {
           "FromPort": 443, "ToPort": 443,
           "IpRanges": [{"CidrIp": "0.0.0.0/0"}],
           "Ipv6Ranges": [{"CidrIpv6": "::/0"}]
+        },
+        {
+          "IpProtocol": "tcp",
+          "FromPort": 873, "ToPort": 873,
+          "IpRanges": [{"CidrIp": "0.0.0.0/0"}],
+          "Ipv6Ranges": [{"CidrIpv6": "::/0"}]
+        },
+        {
+          "IpProtocol": "tcp",
+          "FromPort": 43, "ToPort": 43,
+          "IpRanges": [{"CidrIp": "0.0.0.0/0"}],
+          "Ipv6Ranges": [{"CidrIpv6": "::/0"}]
+        },
+        {
+          "IpProtocol": "tcp",
+          "FromPort": 53, "ToPort": 53,
+          "IpRanges": [{"CidrIp": "0.0.0.0/0"}],
+          "Ipv6Ranges": [{"CidrIpv6": "::/0"}]
+        },
+        {
+          "IpProtocol": "udp",
+          "FromPort": 53, "ToPort": 53,
+          "IpRanges": [{"CidrIp": "0.0.0.0/0"}],
+          "Ipv6Ranges": [{"CidrIpv6": "::/0"}]
+        },
+        {
+          "IpProtocol": "udp",
+          "FromPort": 123, "ToPort": 123,
+          "IpRanges": [{"CidrIp": "0.0.0.0/0"}],
+          "Ipv6Ranges": [{"CidrIpv6": "::/0"}]
+        },
+        {
+          "IpProtocol": "udp",
+          "FromPort": 67, "ToPort": 68,
+          "IpRanges": [{"CidrIp": "0.0.0.0/0"}],
+          "Ipv6Ranges": [{"CidrIpv6": "::/0"}]
         }
       ]'
     cmd_check
 
-    echo -e "\n$green EC2: Authorizing Egress Rules (EC2 <= localhost):
-    $blue
-    ICMP \t(Echo) \t\tport 8-1 \tcidr: 0.0.0.0/0
-    TCP \t(HTTP) \t\tport 80 \tcider: 0.0.0.0/0, ::/0 (IPv4/IPv6)
-    TCP \t(HTTPS) \tport 443 \tcider: 0.0.0.0/0, ::/0 (IPv4/IPv6)"
+    echo -e "$green\nEC2: Authorizing Egress Rules (EC2 <= localhost): $blue\n
+    ICMP (echo)   port 8-1    cidr: 0.0.0.0/0
+    TCP  (HTTP)   port 80     cidr: 0.0.0.0/0, ::/0 (IPv4/IPv6)
+    TCP  (HTTPS)  port 443    cidr: 0.0.0.0/0, ::/0 (IPv4/IPv6)
+    TCP  (rsync)  port 873    cidr: 0.0.0.0/0, ::/0 (IPv4/IPv6)
+    TCP  (whois)  port 43     cidr: 0.0.0.0/0, ::/0 (IPv4/IPv6)
+    TCP  (DNS)    port 53     cidr: 0.0.0.0/0, ::/0 (IPv4/IPv6)
+    UDP  (DNS)    port 53     cidr: 0.0.0.0/0, ::/0 (IPv4/IPv6)
+    UDP  (NTP)    port 123    cidr: 0.0.0.0/0, ::/0 (IPv4/IPv6)
+    UDP  (DHCP)   port 67:68  cidr: 0.0.0.0/0, ::/0 (IPv4/IPv6)"
     aws ec2 authorize-security-group-egress \
       --group-id $ec2_group_id \
       --ip-permissions '[
@@ -386,6 +431,42 @@ ec2_rule_add() {
           "FromPort": 443, "ToPort": 443,
           "IpRanges": [{"CidrIp": "0.0.0.0/0"}],
           "Ipv6Ranges": [{"CidrIpv6": "::/0"}]
+        },
+        {
+          "IpProtocol": "tcp",
+          "FromPort": 873, "ToPort": 873,
+          "IpRanges": [{"CidrIp": "0.0.0.0/0"}],
+          "Ipv6Ranges": [{"CidrIpv6": "::/0"}]
+        },
+        {
+          "IpProtocol": "tcp",
+          "FromPort": 43, "ToPort": 43,
+          "IpRanges": [{"CidrIp": "0.0.0.0/0"}],
+          "Ipv6Ranges": [{"CidrIpv6": "::/0"}]
+        },
+        {
+          "IpProtocol": "tcp",
+          "FromPort": 53, "ToPort": 53,
+          "IpRanges": [{"CidrIp": "0.0.0.0/0"}],
+          "Ipv6Ranges": [{"CidrIpv6": "::/0"}]
+        },
+        {
+          "IpProtocol": "udp",
+          "FromPort": 53, "ToPort": 53,
+          "IpRanges": [{"CidrIp": "0.0.0.0/0"}],
+          "Ipv6Ranges": [{"CidrIpv6": "::/0"}]
+        },
+        {
+          "IpProtocol": "udp",
+          "FromPort": 123, "ToPort": 123,
+          "IpRanges": [{"CidrIp": "0.0.0.0/0"}],
+          "Ipv6Ranges": [{"CidrIpv6": "::/0"}]
+        },
+        {
+          "IpProtocol": "udp",
+          "FromPort": 67, "ToPort": 68,
+          "IpRanges": [{"CidrIp": "0.0.0.0/0"}],
+          "Ipv6Ranges": [{"CidrIpv6": "::/0"}]
         }
       ]'
     cmd_check
@@ -401,7 +482,7 @@ ec2_rule_add() {
       --output text)
     cmd_check
 
-    lip_fetch # fetch latest localhost IP
+    ip_fetch # fetch latest localhost IP
 
     if [ "$ec2_inbound_cidr" != "$localhost_ip/32" ]; then
       echo -e "\n$green \bAdding new inbound rule (localhost => EC2): \

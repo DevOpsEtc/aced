@@ -34,6 +34,7 @@ ec2_eip_rotate() {
   known_host_add update     # update EC2 host in known_host
   notify eip                # show info RE: DNS host records
   aced_cfg_push ec2_ip      # push updated IP to config
+  read -n 1 -s -p $'\n'"$yellow""Press any key to continue "; clear
 }
 
 ec2_start(){
@@ -51,6 +52,9 @@ ec2_start(){
   ssh_alias_create update   # update ssh connection alias with new IP
   known_host_add update     # update EC2 host in known_host
   aced_cfg_push ec2_ip      # push updated IP to config
+
+  [[ "$1" == "menu" ]] \
+    && read -n 1 -s -p "$yellow""Press any key to continue "; clear
 }
 
 ec2_stop() {
@@ -68,6 +72,9 @@ ec2_stop() {
     aws ec2 wait instance-stopped --instance-ids "$ec2_id" &
     activity_show
     cmd_check
+
+    [[ "$1" == "menu" ]] \
+      && read -n 1 -s -p "$yellow""Press any key to continue "; clear
   fi
 }
 
@@ -85,13 +92,16 @@ ec2_reboot() {
   ec2_eip_fetch silent # fetch current EIP
   aws_waiter SSH silent &
   activity_show
+
+  [[ "$1" == "menu" ]] \
+    && read -n 1 -s -p "$yellow""Press any key to continue "; clear
 }
 
 ec2_connect() {
-  ec2_state  # check current state of $aced_nm
+  ec2_state # check current state of $aced_nm
   [[ "$state" != "Running" ]] && { echo -e "\n$state_msg"; return; }
 
-  lip_fetch match  # fetch fresh localhost public IP & compare to last
+  ip_fetch match  # fetch fresh localhost public IP & compare to last
   if [ "$lip_last" != "$localhost_ip/32" ]; then
     echo -e "\n$yellow \bMismatched current/last known: localhost IP!"
     ec2_rule_add lip_update # add ingress rule for new IP; revoke old
@@ -111,6 +121,9 @@ ec2_connect() {
 
   echo -e "$yellow \bConnecting to EC2 instance: $ec2_tag... \n$reset"
   ssh $ssh_alias  # ssh connection to EC2 instance
+
+  [[ "$1" == "menu" ]] \
+    && read -n 1 -s -p "$yellow""Press any key to continue "; clear
 }
 
 ec2_terminate() {
