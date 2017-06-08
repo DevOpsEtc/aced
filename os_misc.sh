@@ -22,4 +22,16 @@ os_misc() {
   echo -e "\n$green \bRemote: creating symlink from /var/logs => ~/log..."
   ssh $ssh_alias "sudo ln -s /var/log/ ~/logs"
   cmd_check
+
+  echo -e "\n$green \bRemote: downloading vimrc from DevOpsEtc's Dotfiles \
+    \b\b\b\brepo... \n$blue"
+  file='DevOpsEtc/dotfiles/master/vim/vimrc_min.vim'
+  ssh $ssh_alias "curl -so https://raw.githubusercontent.com/$file ~/.vimrc \
+    && ls -l .vimrc"
+
+  echo -e "\n$green \bRemote: downloading bashrc from DevOpsEtc's Dotfiles \
+    \b\b\b\brepo... \n$blue"
+  file='DevOpsEtc/dotfiles/master/bash/bashrc_min.sh'
+  ssh $ssh_alias "curl -so https://raw.githubusercontent.com/$file ~/.bashrc \
+    && ls -l .bashrc"
 }

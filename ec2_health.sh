@@ -4,7 +4,7 @@
 ##  filename:   ec2_health.sh                      ##
 ##  path:       ~/src/deploy/cloud/aws/            ##
 ##  purpose:    EC2 state & health status          ##
-##  date:       05/07/2017                         ##
+##  date:       06/06/2017                         ##
 ##  repo:       https://github.com/DevOpsEtc/aced  ##
 ##  clone path: ~/aced/app/                        ##
 #####################################################
@@ -107,14 +107,17 @@ ec2_health() {
     top_out=$(ssh $ssh_alias "top -bn1 | head -1")
     cmd_check
 
-    logins=$(echo $top_out | awk '{print $6,$7}' | sed 's/,//')
-    load=$(echo $top_out | awk '{print $10,$11,$12}')
+    echo -e "\n$green \bFetching user logins..."
+    # logins=$(echo $top_out | awk '{print $6,$7}' | sed 's/,//')
+    logins=$(ssh $ssh_alias "users | wc -w")
+    cmd_check
 
     echo -e "\n$green \bFetching memory usage..."
     mem=$(ssh $ssh_alias "free -mh | tail -2 | head -1") \
       && free_mem_swp=$(ssh $ssh_alias "free -mh | tail -1")
     cmd_check
 
+    load=$(echo $top_out | awk '{print $10,$11,$12}')
     mem_tot=$(echo $mem | awk '{print $2}')
     mem_used=$(echo $mem | awk '{print $3}')
     mem_free=$(echo $mem | awk '{print $4}')
@@ -149,7 +152,7 @@ ec2_health() {
     http_code=$(curl -s -o /dev/null -w '%{http_code}' https://www.$os_fqdn)
     cmd_check
 
-    echo -e "\n$green \bFetching TLS/SSL certificate expiry date..."
+    echo -e "\n$green \bFetching TLS certificate expiry date..."
     cert_exp=$(ssh $ssh_alias "sudo certbot certificates 2>/dev/null \
       | awk '/Expiry/ {print \$6}'")
     cmd_check

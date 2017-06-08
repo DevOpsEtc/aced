@@ -201,7 +201,7 @@ ec2_launch() {
   ec2_id=$(aws ec2 run-instances \
     --image-id $ami_id \
     --count 1 \
-    --instance-type t2.micro \
+    --instance-type $aws_type \
     --key-name $ssh_key_public \
     --security-groups $ec2_group \
     --block-device-mappings "[{ \

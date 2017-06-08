@@ -4,7 +4,7 @@
 ##  filename:   misc.sh                            ##
 ##  path:       ~/src/deploy/cloud/aws/            ##
 ##  purpose:    misc ACED helper tasks             ##
-##  date:       05/07/2017                         ##
+##  date:       06/06/2017                         ##
 ##  repo:       https://github.com/DevOpsEtc/aced  ##
 ##  clone path: ~/aced/app/                        ##
 #####################################################
@@ -74,7 +74,7 @@ cert_get() {
     decision_response Revoke web certificates?
     if [[ "$response" =~ [yY] ]]; then
       echo -e "\n$green \bCertbot: revoking web certificates... "
-      echo $blue; ssh -t $ssh_alias " \
+      echo $blue; ssh $ssh_alias " \
         sudo certbot revoke \
           --cert-path /etc/letsencrypt/live/$os_fqdn/cert.pem \
         && sudo certbot delete --cert-name $os_fqdn"
@@ -84,9 +84,9 @@ cert_get() {
   elif [ "$os_cert_issued" == false ]; then
     echo -e "\n$green \bCertbot: requesting web certificates from \
       \b\b\b\b\b\bLet's Encrypt... "
-    echo $blue; ssh -t $ssh_alias "sudo certbot certonly --webroot \
-      -w $os_www_live/html -d $os_fqdn,www.$os_fqdn \
-      -w $os_www_dev/html -d $os_fqdn_dev \
+    echo $blue; ssh $ssh_alias "sudo certbot certonly --webroot \
+      -w $os_www_live/public -d $os_fqdn,www.$os_fqdn \
+      -w $os_www_dev/public -d $os_fqdn_dev \
       --email $os_user_email --agree-tos --no-eff-email"
     cmd_check
 
@@ -127,7 +127,7 @@ cert_get() {
 
     echo -e "\n$green \bLocalhost: removing certificate cruft... "
     ssh $ssh_alias " \sudo rm -rf \
-      /var/www/devopsetc.com/{live/html/.well-known,dev/html/.well-known} \
+      /var/www/devopsetc.com/{live/public/.well-known,dev/public/.well-known} \
       && sudo rm -f /etc/cron.d/cerbot"
     cmd_check
 
@@ -240,39 +240,42 @@ notify() {
 
 os_admin() {
   if [ $1 == "rules" ]; then
-    echo $blue; ssh $ssh_alias "sudo iptables -L -nv --line-numbers"
+    echo $blue; ssh -t $ssh_alias "sudo iptables -L -nv --line-numbers"
+  elif [ $1 == "bans" ]; then
+    echo $blue; ssh -t $ssh_alias "sudo iptables -L -n --line-numbers \
+      | grep 'Chain f2b\|REJECT'"
   elif [ $1 == "jails" ]; then
-    echo $blue; ssh $ssh_alias "jails=(\$(sudo fail2ban-client status \
+    echo $blue; ssh -t $ssh_alias "jails=(\$(sudo fail2ban-client status \
       | awk '/Jail list/ {gsub(/,/,\"\");for(i=4;i<=NF;++i)print \$i}')) \
     && for j in \${jails[@]}; do echo; sudo fail2ban-client status \$j; done"
   elif [ $1 == "certs" ]; then
     echo -e "\n$green \bCertbot: fetching certificate info... "
-    echo $blue; ssh $ssh_alias "sudo certbot certificates"
+    echo $blue; ssh -t $ssh_alias "sudo certbot certificates"
   elif [ $1 == "dns" ]; then
     echo $blue; dig any $os_fqdn
   elif [ $1 == "drops" ]; then
-    echo $blue; ssh $ssh_alias " \
+    echo $blue; ssh -t $ssh_alias " \
       sudo cat /var/log/syslog | awk '/IPT_DROP/ {print \$0,\"\n\"}'"
   elif [ $1 == "services" ]; then
-    echo $blue; ssh $ssh_alias " \
+    echo $blue; ssh -t $ssh_alias " \
       systemctl status nginx sshd fail2ban netfilter-persistent --no-page"
   elif [ $1 == "net_services" ]; then
-    echo $blue; ssh $ssh_alias "sudo netstat -tulpn"
+    echo $blue; ssh -t $ssh_alias "sudo netstat -tulpn"
   elif [ $1 == "processes" ]; then
     echo $blue; ssh $ssh_alias " \
       ps aux | grep '[U]SER\|[n]ginx\|[s]shd\|[f]ail2ban'"
   elif [ $1 == "ports" ]; then
-    echo $blue; ssh $ssh_alias "netstat -nlt | grep ':80\|:443\|:$os_ssh_port'"
+    echo $blue; ssh -t $ssh_alias "netstat -nlt | grep ':80\|:443\|:$os_ssh_port'"
   elif [ $1 == "updates" ]; then
     echo -e "\n$green \bRemote: Updating package lists... $blue\n"
-    ssh $ssh_alias "sudo apt update -q 2> /dev/null"
+    ssh -t $ssh_alias "sudo apt update -q 2> /dev/null"
     updates=$(ssh $ssh_alias "apt list --upgradable 2> /dev/null")
-    if [ $updates != "Listing..." ]; then
+    if [ "$updates" != "Listing..." ]; then
       echo -e "\n$green \bRemote: Checking for app updates... $blue\n"
       ssh $ssh_alias "apt list --upgradable 2> /dev/null"
       decision_response Upgrade all packages?
       if [[ "$response" =~ [yY] ]]; then
-        echo $blue; ssh $ssh_alias " \
+        echo $blue; ssh -t $ssh_alias " \
           sudo DEBIAN_FRONTEND=noninteractive apt-get -qy \
             -o DPkg::options::=\"--force-confdef\" \
             -o DPkg::options::=\"--force-confold\" \
@@ -292,7 +295,7 @@ os_admin() {
     )
     for l in "${logs[@]}"; do
     	echo -e "\n$green \bRemote: fetching tailed log: /var/log/$l... "
-    	echo $blue; ssh $ssh_alias "sudo tail /var/log/$l"
+    	echo $blue; ssh -t $ssh_alias "sudo tail /var/log/$l"
     done
   fi
   cmd_check
@@ -353,18 +356,17 @@ ssh_alias_create() {
 } # end func: ssh_alias_create
 
 web_mm() {
-  echo -e "\n$green \b$os_fqdn_title: toggling maintenance mode... "
-  ssh $ssh_alias " \
+  echo -e "\n$green \b$os_fqdn_title: toggling maintenance mode... $reset\n"
+  ssh -t $ssh_alias " \
     sudo sed -i '/return 503/ s/^\s*#/ /; t; /return 503/ s/^\s*/  # /' \
     /etc/nginx/sites-available/devopsetc.com \
-    && sudo nginx -t &>/dev/null \
     && sudo service nginx reload"
 
   aws_waiter HTTPS
 
   # fetch current HTTP status
-  http_status=$(curl -s -o /dev/null -I -w "%{http_code}" https://$os_fqdn)
-	[[ $http_status == "503" ]] && mm=on || mm=off
+  http_status=$(curl -s -o /dev/null -I -w "%{http_code}" https://www.$os_fqdn)
+	[[ $http_status == "503" ]] && mm="on" || mm="off"
   echo -e "\n$blue \bMaintenance mode $mm! $reset"
 
   [[ "$1" == "menu" ]] \

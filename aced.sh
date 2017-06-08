@@ -23,11 +23,11 @@ version() {
       | | | || \__/\| |___ | |/ /
       \_| |_/ \____/\____/ |___/
 
-    AWS Cloud Environment Deployment
+        AWS Cloud Easy Deploy
 
-      Version:  $aced_ver
-      Released: $aced_rel
-      Author:   DevOps /etc
+        Version:  $aced_ver
+        Released: $aced_rel
+        Author:   DevOps /etc
   $reset"
 }
 
@@ -67,6 +67,7 @@ admin_menu() {
     "OS Net Services"
     "OS Package Updates"
     "OS Fail2ban Jails"
+    "OS Fail2ban Bans"
     "OS IPTables Drops"
     "OS IPTables Rules"
     "DNS Host Records"
@@ -97,6 +98,7 @@ admin_menu() {
         "OS IPTables Rules"    ) os_admin rules;        break ;;
         "OS IPTables Drops"    ) os_admin drops;        break ;;
         "OS Fail2ban Jails"    ) os_admin jails;        break ;;
+        "OS Fail2ban Bans"     ) os_admin bans;         break ;;
         "DNS Host Records"     ) os_admin dns;          break ;;
         "EC2 Sec Group Rules"  ) ec2_rule_list;         break ;;
         "Rotate IAM Keys"      ) iam_keys_rotate;       break ;;

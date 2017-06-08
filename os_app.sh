@@ -20,7 +20,7 @@ os_app() {
 os_apt_update() {
   echo -e "\n$green \bRemote: adding PPA, updating app list & upgrading \
     \b\b\b\b\b native apps/dependencies... "
-  echo $blue; ssh -t $ssh_alias " \
+  echo $blue; ssh $ssh_alias " \
     sudo DEBIAN_FRONTEND=noninteractive apt -qy install grub-pc \
     && sudo DEBIAN_FRONTEND=noninteractive add-apt-repository -y\
       ppa:certbot/certbot \
@@ -54,7 +54,7 @@ os_apt_install() {
   # sudo apt-get remove <app>; sudo apt autoremove
   for i in "${install_pkg[@]}"; do
     echo -e "\n$green \bRemote: installing app: $i... "
-    echo $blue; ssh -t $ssh_alias " \
+    echo $blue; ssh $ssh_alias " \
       sudo DEBIAN_FRONTEND=noninteractive apt -qq install $i"
     cmd_check
   done
@@ -78,33 +78,33 @@ os_nginx_config() {
     \b\b\b\bdefault document root... "
   ssh $ssh_alias " \
     sudo rm -rf /etc/nginx/sites-enabled/default \
-    && sudo rm -rf /var/www/html"
+    && sudo rm -rf /var/www/public"
   cmd_check
 
   echo -e "\n$green \bRemote: creating document root file structure... "
-  ssh $ssh_alias "sudo mkdir -p /var/www/$os_fqdn/{dev,live}/html"
+  ssh $ssh_alias "sudo mkdir -p /var/www/$os_fqdn/{dev,live}/public"
   cmd_check
 
   sites=("dev" "live")
 
   for i in "${sites[@]}"; do
     if [ "$i" == "live" ]; then
-      doc_root=$os_www_live/html
-      doc_root_esc="\/var\/www\/$os_fqdn\/live\/html"
+      doc_root=$os_www_live/public
+      doc_root_esc="\/var\/www\/$os_fqdn\/live\/public"
       fqdn_title=$os_fqdn_title
       fqdn=$os_fqdn
       srv_names="$fqdn www.$fqdn"
       cmd="\$ curl -Is --http2 https:\/\/www.$fqdn"
     elif [ "$i" == "dev" ]; then
-      doc_root=$os_www_dev/html
-      doc_root_esc="\/var\/www\/$os_fqdn\/dev\/html"
+      doc_root=$os_www_dev/public
+      doc_root_esc="\/var\/www\/$os_fqdn\/dev\/public"
       fqdn_title=$os_fqdn_dev_title
       fqdn=$os_fqdn_dev
       srv_names=$fqdn
       cmd="\$ curl -Is --http2 https:\/\/$fqdn"
     fi
 
-    html_pages=("index" "503" "404" "401")
+    html_pages=("index")
 
     for h in "${html_pages[@]}"; do
       if [ "$h" == "index" ]; then
@@ -114,27 +114,6 @@ os_nginx_config() {
         content_pre=$content_title
         content_code='Status Code: 200...'
         content_post='Looks good from here!'
-      elif [ $h == "503" ]; then
-        content_title='Maintenance Mode'
-        content_cmd="$cmd | awk \/HTTP\/"
-        content_out='HTTP\/2.0 503 OK'
-        content_pre='drat, drat and double drat!'
-        content_code='status code: 503...'
-        content_post='you caught us fixing stuff!'
-      elif [ $h == "404" ]; then
-        content_title='Missing Link?'
-        content_cmd="$cmd\/missing_link | awk \/HTTP\/"
-        content_out='HTTP\/2.0 404 Not Found'
-        content_pre='darn darn darn darny darn!'
-        content_code='status code: 404...'
-        content_post='we knew we forgot something!'
-      elif [ $h == "401" ]; then
-        content_title='Test Site'
-        content_cmd="\$ curl -Is --http2 https:\/\/dev.$os_fqdn | awk \/HTTP\/"
-        content_out='HTTP\/2.0 401 Authorization Required'
-        content_pre='really?!'
-        content_code='status code: 401...'
-        content_post='move along, nothing to see here'
       fi
 
       echo -e "\n$green \bRemote: pushing $h.html to $doc_root... "
