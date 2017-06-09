@@ -4,7 +4,7 @@
 ##  filename:   config.sh                          ##
 ##  path:       ~/src/deploy/cloud/aws/            ##
 ##  purpose:    default ACED settings              ##
-##  date:       05/01/2017                         ##
+##  date:       06/09/2017                         ##
 ##  repo:       https://github.com/DevOpsEtc/aced  ##
 ##  clone path: ~/aced/app/                        ##
 #####################################################
@@ -25,7 +25,7 @@ aced_src="$aced_root/src"              # ACED data path
 aced_blog="$aced_src/blog"             # ACED repo root path
 aced_config="$aced_root/config"        # ACED config path
 aced_keys="$aced_config/keys"          # ACED key pair path
-aced_certs="$aced_config/certs"        # domain name certificate path
+aced_certs="$aced_config/certificates" # domain name certificate path
 aced_backups="$aced_config/backups"    # ACED backup path
 aws_config="$HOME/.aws"                # AWS default config path
 ssh_config="$HOME/.ssh"                # SSH default config path

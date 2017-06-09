@@ -4,7 +4,7 @@
 ##  filename:   os_sec.sh                          ##
 ##  path:       ~/src/deploy/cloud/aws/            ##
 ##  purpose:    server security hardening          ##
-##  date:       05/01/2017                         ##
+##  date:       06/09/2017                         ##
 ##  repo:       https://github.com/DevOpsEtc/aced  ##
 ##  clone path: ~/aced/app/                        ##
 #####################################################
@@ -39,8 +39,7 @@ os_user_create() {
   ssh $ssh_alias "sudo usermod -aG sudo $os_user"
   cmd_check
 
-  echo -e "\n$green \bRemote: allowing password-less sudo for $os_user \
-    \b\b\b\b(temporary)... "
+  echo -e "\n$green \bRemote: allowing password-less sudo for $os_user... "
   echo "$os_user ALL=(ALL) NOPASSWD:ALL" \
     | ssh $ssh_alias "sudo tee -a /etc/sudoers.d/$aced_nm_title-users > \
       /dev/null"

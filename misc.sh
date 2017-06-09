@@ -4,7 +4,7 @@
 ##  filename:   misc.sh                            ##
 ##  path:       ~/src/deploy/cloud/aws/            ##
 ##  purpose:    misc ACED helper tasks             ##
-##  date:       06/06/2017                         ##
+##  date:       06/09/2017                         ##
 ##  repo:       https://github.com/DevOpsEtc/aced  ##
 ##  clone path: ~/aced/app/                        ##
 #####################################################
@@ -66,8 +66,10 @@ argument_check() {
 
 cert_get() {
   ###################################################
-  ####  Request/revoke web certificates          ####
+  ####  Request/revoke/restore web certificates  ####
   ###################################################
+  [[ $1 == "restore" ]] && os_cert_issued=false
+
   if [ "$os_cert_issued" == true ]; then
     echo -e "\n$green \bCertbot: fetching certificate info... "
     echo $blue; ssh $ssh_alias "sudo certbot certificates"
@@ -82,19 +84,25 @@ cert_get() {
       cert_get
     fi
   elif [ "$os_cert_issued" == false ]; then
-    echo -e "\n$green \bCertbot: requesting web certificates from \
-      \b\b\b\b\b\bLet's Encrypt... "
-    echo $blue; ssh $ssh_alias "sudo certbot certonly --webroot \
-      -w $os_www_live/public -d $os_fqdn,www.$os_fqdn \
-      -w $os_www_dev/public -d $os_fqdn_dev \
-      --email $os_user_email --agree-tos --no-eff-email"
-    cmd_check
+    if [ $1 != "restore" ]; then
+      echo -e "\n$green \bCertbot: requesting web certificates from \
+        \b\b\b\b\b\bLet's Encrypt... "
+      echo $blue; ssh $ssh_alias "sudo certbot certonly --webroot \
+        -w $os_www_live/public -d $os_fqdn,www.$os_fqdn \
+        -w $os_www_dev/public -d $os_fqdn_dev \
+        --email $os_user_email --agree-tos --no-eff-email"
+      cmd_check
 
-    echo -e "\n$green \bRemote: creating 2048-bit DHE key to secure \
-      \b\b\b\b\b\bcommunication with HTTP server & Let's Encrypt CA..."
-    echo $blue; ssh $ssh_alias " \
-      sudo openssl dhparam -out /etc/ssl/certs/dhparam.pem 2048"
-    cmd_check
+      echo -e "\n$green \bRemote: creating 2048-bit DHE key to secure \
+        \b\b\b\b\b\bcommunication with HTTP server & Let's Encrypt CA..."
+      echo $blue; ssh $ssh_alias " \
+        sudo openssl dhparam -out /etc/ssl/certs/dhparam.pem 2048"
+      cmd_check
+    elif [ $1 == "restore" ]; then
+      echo -e "\n$green \bRemote: restoring your web certificates... $reset\n"
+      rsync -rv --rsync-path="sudo rsync" $aced_certs/ $ssh_alias:/etc/letsencrypt/
+      cmd_check
+    fi
 
     sites=("dev" "live")
 
@@ -102,7 +110,7 @@ cert_get() {
       [[ "$i" == "live" ]] && fqdn=$os_fqdn
       [[ "$i" == "dev" ]] && fqdn=$os_fqdn_dev
 
-      echo -e "\n$green \bRemote: Updating server block with TLS/SSL \
+      echo -e "\n$green \bRemote: Updating server block with TLS \
         \b\b\b\b\b\bdirectives for $fqdn..."
       # e1: kill pre-cert block; ec2: uncomment post-cert block; e3: kill headers
       ssh $ssh_alias " \
@@ -115,15 +123,16 @@ cert_get() {
     done
 
     echo -e "\n$green \bRemote: restarting Nginx service... "
-    ssh $ssh_alias "sudo nginx -t &>/dev/null && sudo service nginx restart"
+    ssh $ssh_alias "sudo nginx -t && sudo service nginx restart"
     cmd_check
 
-    echo -e "\n$green \bRemote: backing up certs for $aced_nm reinstalls \
-      \n\n$blue \b$aced_certs/$(date +%m-%d-%Y_%H-%M)... "
-    rsync -azhe ssh --rsync-path="sudo rsync" \
-      $ssh_alias:/etc/letsencrypt/{archive,live,renewal} \
-      $aced_certs/$(date +%m-%d-%Y_%H-%M)
-    cmd_check
+    if [ $1 != "restore" ]; then
+      echo -e "\n$green \bRemote: backing up certs for $aced_nm restores \
+        \n\n$blue \b$aced_certs "
+      rsync -azhe ssh --rsync-path="sudo rsync" \
+        $ssh_alias:/etc/letsencrypt/{archive,live,renewal} $aced_certs
+      cmd_check
+    fi
 
     echo -e "\n$green \bLocalhost: removing certificate cruft... "
     ssh $ssh_alias " \sudo rm -rf \
@@ -354,6 +363,21 @@ ssh_alias_create() {
   chmod u=rw,go= ~/.ssh/config
   cmd_check
 } # end func: ssh_alias_create
+
+sudo_pass() {
+  echo -e "\n$green \bRemote: toggling password-less sudo for $os_user... \
+    $reset \n"
+  ssh -t $ssh_alias " \
+    sudo sed -i '/$os_user/ s/^\s*#//; t; /$os_user/ s/^\s*/# /' \
+      /etc/sudoers.d/$aced_nm_title-users && sudo -k"
+
+  sudo_test=$(ssh aced "sudo date &>/dev/null") # see if sudo fails without -t
+  [[ $? == 0 ]] && ss="on" || ss="off" # check prior command for fail
+  echo -e "\n$blue \bPassword-less sudo $ss! $reset"
+
+  [[ "$1" == "menu" ]] \
+    && read -n 1 -s -p $'\n'"$yellow""Press any key to continue "; clear
+}
 
 web_mm() {
   echo -e "\n$green \b$os_fqdn_title: toggling maintenance mode... $reset\n"

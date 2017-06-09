@@ -4,7 +4,7 @@
 ##  filename:   aced.sh                                    ##
 ##  path:       ~/src/deploy/cloud/aws/                    ##
 ##  purpose:    run ACED: Automated EC2 Deploy             ##
-##  date:       05/03/2017                                 ##
+##  date:       06/09/2017                                 ##
 ##  symlink:    $ ln -s ~/src/deploy/cloud/aws ~/aced/app  ##
 ##  repo:       https://github.com/DevOpsEtc/aced          ##
 ##  clone path: ~/aced/app/                                ##
@@ -48,6 +48,7 @@ aced_help() {
     $ aced -u or --up         # start ACED instance
     $ aced -v or --version    # show ACED version information
     $ aced -t or --tls        # request new/revoke old web certificate
+    $ aced --tls_restore      # restore web certificates to new instance
     $ aced --uninstall        # uninstall ACED
   $reset"
 }
@@ -60,16 +61,17 @@ admin_menu() {
   admin_item=(
     "Web Maintenance Mode"
     "Web Certificates"
+    "OS Fail2ban Bans"
+    "OS Fail2ban Jails"
+    "OS IPTables Drops"
+    "OS IPTables Rules"
     "OS Main Logs"
     "OS Main Ports"
     "OS Main Processes"
     "OS Main Services"
     "OS Net Services"
     "OS Package Updates"
-    "OS Fail2ban Jails"
-    "OS Fail2ban Bans"
-    "OS IPTables Drops"
-    "OS IPTables Rules"
+    "OS Pass-less Sudo"
     "DNS Host Records"
     "EC2 Sec Group Rules"
     "Rotate IAM Keys"
@@ -89,16 +91,17 @@ admin_menu() {
       case $admin in
         "Web Maintenance Mode" ) web_mm menu;           break ;;
         "Web Certificates"     ) os_admin certs;        break ;;
+        "OS Fail2ban Bans"     ) os_admin bans;         break ;;
+        "OS Fail2ban Jails"    ) os_admin jails;        break ;;
+        "OS IPTables Drops"    ) os_admin drops;        break ;;
+        "OS IPTables Rules"    ) os_admin rules;        break ;;
         "OS Main Logs"         ) os_admin logs;         break ;;
         "OS Main Ports"        ) os_admin ports;        break ;;
         "OS Main Processes"    ) os_admin processes;    break ;;
         "OS Main Services"     ) os_admin services;     break ;;
         "OS Net Services"      ) os_admin net_services; break ;;
         "OS Package Updates"   ) os_admin updates;      break ;;
-        "OS IPTables Rules"    ) os_admin rules;        break ;;
-        "OS IPTables Drops"    ) os_admin drops;        break ;;
-        "OS Fail2ban Jails"    ) os_admin jails;        break ;;
-        "OS Fail2ban Bans"     ) os_admin bans;         break ;;
+        "OS Pass-less Sudo"    ) sudo_pass menu;        break ;;
         "DNS Host Records"     ) os_admin dns;          break ;;
         "EC2 Sec Group Rules"  ) ec2_rule_list;         break ;;
         "Rotate IAM Keys"      ) iam_keys_rotate;       break ;;
@@ -175,7 +178,7 @@ main() {
     sleep 2
     echo -e "\n$white \b****  $aced_nm: Install  ****"
     echo -e "\n$green \bCreating file structure... "
-    mkdir -p $aced_root/{config/{backups/{aws,ssh},certs,keys},src/blog}
+    mkdir -p $aced_root/{config/{backups/{aws,ssh},certificates,keys},src/blog}
     cmd_check   # invoke func: check last command status code
     iam         # invoke func: check/install IAM group/user/policy
     ec2_sec     # invoke func: check/install EC2 key pair/group/rules
@@ -222,6 +225,7 @@ main() {
     uninstall   ) uninstall         ;; # remove ACED payload & settings
     v|version   ) version           ;; # show ACED version info
     t|tls       ) cert_get          ;; # request new/revoke old web certificate
+    tls_restore ) cert_get restore  ;; # restore web certificates; new instance
     *           ) task_menu         ;; # show ACED task menu: wildcard args
   esac
 } # end func: main

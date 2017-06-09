@@ -74,6 +74,15 @@ os_nginx_config() {
       /etc/nginx/conf.d/$os_fqdn.conf"
   cmd_check
 
+  # bug workaround: https://bugs.launchpad.net/ubuntu/+source/nginx/+bug/1581864
+  echo -e "\n$green \bRemote: pushing override config... "
+  ssh $ssh_alias "\
+    sudo mkdir /etc/systemd/system/nginx.service.d \
+    printf "[Service]\nExecStartPost=/bin/sleep 0.1\n" \
+      | sudo tee /etc/systemd/system/nginx.service.d/override.conf
+    sudo systemctl daemon-reload
+    sudo systemctl restart nginx"
+
   echo -e "\n$green \bRemote: disabling default server block & removing \
     \b\b\b\bdefault document root... "
   ssh $ssh_alias " \
@@ -94,40 +103,18 @@ os_nginx_config() {
       fqdn_title=$os_fqdn_title
       fqdn=$os_fqdn
       srv_names="$fqdn www.$fqdn"
-      cmd="\$ curl -Is --http2 https:\/\/www.$fqdn"
     elif [ "$i" == "dev" ]; then
       doc_root=$os_www_dev/public
       doc_root_esc="\/var\/www\/$os_fqdn\/dev\/public"
       fqdn_title=$os_fqdn_dev_title
       fqdn=$os_fqdn_dev
       srv_names=$fqdn
-      cmd="\$ curl -Is --http2 https:\/\/$fqdn"
     fi
 
-    html_pages=("index")
-
-    for h in "${html_pages[@]}"; do
-      if [ "$h" == "index" ]; then
-        content_title="Welcome to $fqdn_title!"
-        content_cmd="$cmd | awk \/HTTP\/"
-        content_out='HTTP\/2.0 200 OK'
-        content_pre=$content_title
-        content_code='Status Code: 200...'
-        content_post='Looks good from here!'
-      fi
-
-      echo -e "\n$green \bRemote: pushing $h.html to $doc_root... "
-      cat ./build/html \
-        | sed \
-          -e "s/content_title/$content_title/" \
-          -e "s/content_cmd/$content_cmd/" \
-          -e "s/content_out/$content_out/" \
-          -e "s/content_pre/$content_pre/" \
-          -e "s/content_code/$content_code/" \
-          -e "s/content_post/$content_post/" \
-        | ssh $ssh_alias "sudo tee $doc_root/$h.html > /dev/null"
-      cmd_check
-    done
+    echo -e "\n$green \bRemote: pushing test index.html to $doc_root... "
+    echo -e "Welcome to $fqdn_title" \
+      | ssh $ssh_alias "sudo tee $doc_root/index.html > /dev/null"
+    cmd_check
 
     echo -e "\n$green \bRemote: pushing Nginx server block and enabling \
       \b\b\b\b\b\b\b site $fqdn_title... "
@@ -159,7 +146,7 @@ os_nginx_config() {
       ssh $ssh_alias " \
         sudo sed -i \
           -e '/listen/ s/ default_server//' \
-          -e '/post-cert-live/,/post-cert-live/d' \
+          -e '/## post-cert-live/,/## post-cert-live/d' \
           -e '/## live site/,/## live site/d' \
           -e '/## dev site/d' \
         /etc/nginx/sites-available/$fqdn"

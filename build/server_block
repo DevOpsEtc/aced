@@ -1,0 +1,117 @@
+#####################################################
+##  filename:   server_block                       ##
+##  path:       ~/src/deploy/cloud/aws/build       ##
+##  purpose:    nginx server block template        ##
+##  date:       06/08/2017                         ##
+##  repo:       https://github.com/DevOpsEtc/aced  ##
+##  clone path: ~/aced/app/build                   ##
+##  notes:      tested with nginx version: 1.10.0  ##
+#####################################################
+
+## pre-cert #########################################
+server {
+  listen 80 default_server;
+  listen [::]:80 default_server;
+  server_name srv_names;
+## pre-cert #########################################
+## post-cert-dev ####################################
+# server {
+#   listen 80;
+#   listen [::]:80;
+#   server_name srv_names;
+#   return 301 https://$server_name$request_uri;
+# }
+
+# server {
+#   listen 443 ssl http2 default_server;
+#   listen [::]:443 ssl http2 default_server;
+#   server_name fqdn;
+## post-cert-dev ####################################
+## post-cert-live ###################################
+# server {
+#   listen 80;
+#   listen [::]:80;
+#   server_name srv_names;
+#   return 301 https://www.$server_name$request_uri;
+# }
+
+# server {
+#   listen 443;
+#   listen [::]:443;
+#   server_name fqdn;
+#   return 301 https://www.$server_name$request_uri;
+# }
+
+# server {
+#   listen 443 ssl http2 default_server;
+#   listen [::]:443 ssl http2 default_server;
+#   server_name www.fqdn;
+## post-cert-live ###################################
+
+## post-cert ########################################
+#   ssl_certificate /etc/letsencrypt/live/os_fqdn/fullchain.pem;
+#   ssl_certificate_key /etc/letsencrypt/live/os_fqdn/privkey.pem;
+#   ssl_trusted_certificate /etc/letsencrypt/live/os_fqdn/chain.pem;
+
+#   ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+#   ssl_prefer_server_ciphers on;
+#   ssl_ciphers "EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH";
+#   ssl_ecdh_curve secp384r1;
+#   ssl_session_cache shared:SSL:10m;
+#   ssl_session_timeout 1d;
+#   ssl_session_tickets off;
+#   ssl_stapling on;
+#   ssl_stapling_verify on;
+#   resolver 8.8.8.8 8.8.4.4 valid=300s;
+#   resolver_timeout 10s;
+
+#   add_header Strict-Transport-Security "max-age=63072000; includeSubdomains";
+#   add_header X-Frame-Options DENY;
+#   add_header X-Content-Type-Options nosniff;
+#   add_header X-XSS-Protection "1; mode=block";
+#   add_header Access-Control-Allow-Origin * always;
+#   add_header Access-Control-Allow-Methods GET,POST,OPTIONS;
+#   add_header Access-Control-Allow-Headers X-Requested-With;
+
+#   ssl_dhparam /etc/ssl/certs/dhparam.pem;
+## post-cert ########################################
+
+  root doc_root;
+  index index.html;
+
+  location / {
+    try_files $uri $uri/ =404;
+## dev site only ####################################
+    auth_basic "Test Site";
+    auth_basic_user_file /etc/nginx/.dev_pass;
+## dev site only ####################################
+  }
+
+  location /.well-known/ {
+    allow all;
+## dev site only ####################################
+    auth_basic off;
+## dev site only ####################################
+  }
+
+## dev site only ####################################
+  error_page 401 /401;
+  location = /401/index.html {
+    internal;
+  }
+
+## dev site only ####################################
+  error_page 403 404 /404;
+  location = /404/index.html {
+    internal;
+  }
+
+## live site only ###################################
+  # return 503;
+
+  error_page 503 @503;
+  location @503 {
+    rewrite ^(.*)$ /503/index.html break;
+  }
+## live site only ###################################
+}
