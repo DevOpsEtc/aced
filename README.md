@@ -16,6 +16,8 @@ To read more, see my blog post at [www.DevOpsEtc.com](https://www.DevOpsEtc.com/
 
 **Road Map:**
 - Install MTA (fail2ban notifications)
+- Rotate AWS IAM access_keys
+- Rotate EC2 public/private key
 - Add IP6Tables rules
 - Implement port knocking
 - Install openVPN

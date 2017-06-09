@@ -68,7 +68,7 @@ cert_get() {
   ###################################################
   ####  Request/revoke/restore web certificates  ####
   ###################################################
-  [[ $1 == "restore" ]] && os_cert_issued=false
+  [[ $1 == "rebuild" ]] && os_cert_issued=false
 
   if [ "$os_cert_issued" == true ]; then
     echo -e "\n$green \bCertbot: fetching certificate info... "
@@ -84,7 +84,7 @@ cert_get() {
       cert_get
     fi
   elif [ "$os_cert_issued" == false ]; then
-    if [ $1 != "restore" ]; then
+    if [ $1 != "rebuild" ]; then
       echo -e "\n$green \bCertbot: requesting web certificates from \
         \b\b\b\b\b\bLet's Encrypt... "
       echo $blue; ssh $ssh_alias "sudo certbot certonly --webroot \
@@ -98,7 +98,7 @@ cert_get() {
       echo $blue; ssh $ssh_alias " \
         sudo openssl dhparam -out /etc/ssl/certs/dhparam.pem 2048"
       cmd_check
-    elif [ $1 == "restore" ]; then
+    elif [ $1 == "rebuild" ]; then
       echo -e "\n$green \bRemote: restoring your web certificates... $reset\n"
       rsync -rv --rsync-path="sudo rsync" $aced_certs/ $ssh_alias:/etc/letsencrypt/
       cmd_check
@@ -126,7 +126,7 @@ cert_get() {
     ssh $ssh_alias "sudo nginx -t && sudo service nginx restart"
     cmd_check
 
-    if [ $1 != "restore" ]; then
+    if [ $1 != "rebuild" ]; then
       echo -e "\n$green \bRemote: backing up certs for $aced_nm restores \
         \n\n$blue \b$aced_certs "
       rsync -azhe ssh --rsync-path="sudo rsync" \

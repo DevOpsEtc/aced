@@ -4,7 +4,7 @@
 ##  filename:   ec2.sh                             ##
 ##  path:       ~/src/deploy/cloud/aws/            ##
 ##  purpose:    launch instance & initial config   ##
-##  date:       04/24/2017                         ##
+##  date:       06/09/2017                         ##
 ##  repo:       https://github.com/DevOpsEtc/aced  ##
 ##  clone path: ~/aced/app/                        ##
 #####################################################
@@ -126,10 +126,37 @@ ec2_connect() {
     && read -n 1 -s -p "$yellow""Press any key to continue "; clear
 }
 
+ec2_rebuild() {
+  ###################################################################
+  ####  Rebuild ACED: new EC2 instance, old EIP & old web certs  ####
+  ###################################################################
+  ec2_eip_fetch silent
+
+  echo -e "\n$green \bFetching ACED's EIP association ID..."
+  eip_assoc_id=$(aws ec2 describe-addresses \
+    --filters Name=public-ip,Values=$ec2_ip_last \
+    --query Addresses[*].AssociationId \
+    --output text)
+  cmd_check
+
+  echo -e "\n$green \bDisassociating EIP from EC2 instance: $ec2_tag..."
+  aws ec2 disassociate-address --association-id $eip_assoc_id
+  cmd_check
+
+  ec2_terminate $ec2_id redo  # invoke func: remove ACED instance
+  ec2_launch redo             # invoke func: create ACED instance
+  os_sec                      # invoke func: create user/push key/harden
+  os_app                      # invoke func: update/install/config apps
+  os_misc                     # invoke func: one-off tasks
+  ec2_reboot                  # invoke func: cross fingers
+  cert_get redo               # invoke func: copy web certs/update nginx config
+}
+
 ec2_terminate() {
   argument_check
-  ec2_eip_remove $1 # invoke func: check existing/remove EIP; pass $ec2_id
-
+  if [ "$2" != "redo" ]; then
+    ec2_eip_remove $1 # invoke func: check existing/remove EIP; pass $ec2_id
+  fi
   echo -e "\n$green \bTerminating instance ID: $1... \n$blue"
   aws ec2 terminate-instances --instance-ids "$1"
   aws ec2 wait instance-terminated --instance-ids "$1" &
@@ -140,40 +167,43 @@ ec2_terminate() {
 ec2_launch() {
   echo -e "\n$white \b****  EC2: Instance Launch  ****"
 
-  echo -e "\n$green \bChecking for existing EC2 instances..."
-  ec2_instances=($(aws ec2 describe-instances \
-    --filters "Name=instance-state-name,Values= \
-    pending,running,shutting-down,stopping,stopped" \
-    --query 'Reservations[*].Instances[*].InstanceId' \
-    --output text)
-  )
-  cmd_check
+  if [ "$2" != "redo" ]; then
 
-  if [ ${#ec2_instances[@]} -gt 0 ]; then
-    for i in "${ec2_instances[@]}"; do
-      echo -e "\n$blue \bEC2 instance found: $i"
+    echo -e "\n$green \bChecking for existing EC2 instances..."
+    ec2_instances=($(aws ec2 describe-instances \
+      --filters "Name=instance-state-name,Values= \
+      pending,running,shutting-down,stopping,stopped" \
+      --query 'Reservations[*].Instances[*].InstanceId' \
+      --output text)
+    )
+    cmd_check
 
-      echo -e "\n$green \bChecking for tag name: $ec2_tag"
-      ec2_instance_tag=$(aws ec2 describe-instances \
-        --instance-ids "$i" \
-        --query 'Reservations[].Instances[].Tags[?Key==`Name`].Value' \
-        --output text)
-      cmd_check
+    if [ ${#ec2_instances[@]} -gt 0 ]; then
+      for i in "${ec2_instances[@]}"; do
+        echo -e "\n$blue \bEC2 instance found: $i"
 
-      if [ "$ec2_instance_tag" == "$ec2_tag" ]; then
-        echo -e "\n$blue \bEC2 instance with tag: $ec2_tag found!"
-        ec2_terminate "$i" # invoke func: terminate; pass instance-id
-      else
-        echo -e "\n$blue \bNo matching tag found!"
+        echo -e "\n$green \bChecking for tag name: $ec2_tag"
+        ec2_instance_tag=$(aws ec2 describe-instances \
+          --instance-ids "$i" \
+          --query 'Reservations[].Instances[].Tags[?Key==`Name`].Value' \
+          --output text)
+        cmd_check
 
-        notify instance
+        if [ "$ec2_instance_tag" == "$ec2_tag" ]; then
+          echo -e "\n$blue \bEC2 instance with tag: $ec2_tag found!"
+          ec2_terminate "$i" # invoke func: terminate; pass instance-id
+        else
+          echo -e "\n$blue \bNo matching tag found!"
 
-        decision_response Terminate instance: $i?
-        [[ "$response" =~ [yY] ]] && ec2_terminate "$i"
-      fi
-    done
-  else
-    echo -e "\n$blue \bNo EC2 instances found!"
+          notify instance
+
+          decision_response Terminate instance: $i?
+          [[ "$response" =~ [yY] ]] && ec2_terminate "$i"
+        fi
+      done
+    else
+      echo -e "\n$blue \bNo EC2 instances found!"
+    fi
   fi
 
   echo -e "\n$green \bFetching latest AMI ID for Ubuntu Server 16.04 LTS..."
@@ -265,17 +295,17 @@ ec2_eip_remove() {
         echo -e "\n$blue \bAssociated with instance ID: $eip_instance_id"
         echo -e "\n$green \bFetching EC2 association ID..."
         eip_assoc_id=$(aws ec2 describe-addresses \
-        --allocation-ids $e \
-        --query Addresses[*].AssociationId \
-        --output text)
+          --allocation-ids $e \
+          --query Addresses[*].AssociationId \
+          --output text)
         cmd_check
         echo -e "\n$blue \bAssociation ID: $eip_assoc_id"
 
         echo -e "\n$green \bFetching EC2 instance name..."
         ec2_instance_tag=$(aws ec2 describe-instances \
-        --instance-ids $eip_instance_id \
-        --query 'Reservations[].Instances[].Tags[?Key==`Name`].Value' \
-        --output text)
+          --instance-ids $eip_instance_id \
+          --query 'Reservations[].Instances[].Tags[?Key==`Name`].Value' \
+          --output text)
         cmd_check
         echo -e "\n$blue \bInstance name: $ec2_instance_tag"
 

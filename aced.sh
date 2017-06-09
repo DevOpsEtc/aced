@@ -48,7 +48,7 @@ aced_help() {
     $ aced -u or --up         # start ACED instance
     $ aced -v or --version    # show ACED version information
     $ aced -t or --tls        # request new/revoke old web certificate
-    $ aced --tls_restore      # restore web certificates to new instance
+    $ aced --rebuild          # rebuild instance with same eip & web certs
     $ aced --uninstall        # uninstall ACED
   $reset"
 }
@@ -74,9 +74,6 @@ admin_menu() {
     "OS Pass-less Sudo"
     "DNS Host Records"
     "EC2 Sec Group Rules"
-    "Rotate IAM Keys"
-    "Rotate EC2 Keys"
-    "Rotate EC2 EIP"
     "⇑ Task Menu"
     "✘ QUIT"
   )
@@ -104,9 +101,6 @@ admin_menu() {
         "OS Pass-less Sudo"    ) sudo_pass menu;        break ;;
         "DNS Host Records"     ) os_admin dns;          break ;;
         "EC2 Sec Group Rules"  ) ec2_rule_list;         break ;;
-        "Rotate IAM Keys"      ) iam_keys_rotate;       break ;;
-        "Rotate EC2 Keys"      ) ec2_keypair;           break ;;
-        "Rotate EC2 EIP"       ) ec2_eip_rotate;        break ;;
         "⇑ Task Menu"          ) task_menu;             break ;;
         "✘ QUIT"               ) return;                      ;;
       esac
@@ -186,7 +180,6 @@ main() {
     os_sec      # invoke func: create user/push key/harden on OS
     os_app      # invoke func: update/install/config apps on OS
     os_misc     # invoke func: do one-off tasks on OS
-    # os_hard_act # invoke func: lock default OS account; kill password-less sudo
     ec2_reboot  # invoke func: cross fingers & reboot EC2 instance
 
     if ! alias $ssh_alias > /dev/null; then
@@ -225,7 +218,7 @@ main() {
     uninstall   ) uninstall         ;; # remove ACED payload & settings
     v|version   ) version           ;; # show ACED version info
     t|tls       ) cert_get          ;; # request new/revoke old web certificate
-    tls_restore ) cert_get restore  ;; # restore web certificates; new instance
+    rebuild     ) ec2_rebuild       ;; # relaunch instance; old web certs & EIP
     *           ) task_menu         ;; # show ACED task menu: wildcard args
   esac
 } # end func: main

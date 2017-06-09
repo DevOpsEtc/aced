@@ -127,15 +127,9 @@ os_hard_misc() {
       -e '/order/ s/hosts,bind/bind,hosts/' \
       -e 's/multi on/nospoof on/' \
     /etc/host.conf"
-}
 
-os_hard_act() {
   # password & ssh login; unlock: sudo usermod -e -1 $os_user_def
   echo -e "\n$green \bRemote: locking default account: $os_user_def... "
-  $blue; ssh -t $ssh_alias "sudo usermod -e 1 $os_user_def"
-  cmd_check
-
-  echo -e "\n$green \bRemote: removing password-less sudo for $os_user..."
-  rm -rf /etc/sudoers.d/$aced_nm_title-users &>/dev/null
+  echo $blue; ssh $ssh_alias "sudo usermod -e 1 $os_user_def"; echo $reset
   cmd_check
 }
