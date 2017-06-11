@@ -4,7 +4,7 @@
 ##  filename:   aced.sh                                    ##
 ##  path:       ~/src/deploy/cloud/aws/                    ##
 ##  purpose:    run ACED: Automated EC2 Deploy             ##
-##  date:       06/09/2017                                 ##
+##  date:       06/11/2017                                 ##
 ##  symlink:    $ ln -s ~/src/deploy/cloud/aws ~/aced/app  ##
 ##  repo:       https://github.com/DevOpsEtc/aced          ##
 ##  clone path: ~/aced/app/                                ##
@@ -180,6 +180,7 @@ main() {
     os_sec      # invoke func: create user/push key/harden on OS
     os_app      # invoke func: update/install/config apps on OS
     os_misc     # invoke func: do one-off tasks on OS
+    os_sec_post # invoke func: run commands that needed more time
     ec2_reboot  # invoke func: cross fingers & reboot EC2 instance
 
     if ! alias $ssh_alias > /dev/null; then

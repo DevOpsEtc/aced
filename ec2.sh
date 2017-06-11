@@ -4,7 +4,7 @@
 ##  filename:   ec2.sh                             ##
 ##  path:       ~/src/deploy/cloud/aws/            ##
 ##  purpose:    launch instance & initial config   ##
-##  date:       06/10/2017                         ##
+##  date:       06/11/2017                         ##
 ##  repo:       https://github.com/DevOpsEtc/aced  ##
 ##  clone path: ~/aced/app/                        ##
 #####################################################
@@ -56,17 +56,17 @@ ec2_eip_create() {
   ec2_eip_remove
 
   echo -e "\n$green \bAllocating new EIP..."
-  eip_id=$(aws ec2 allocate-address \
+  ec2_eip_id=$(aws ec2 allocate-address \
     --domain vpc \
     --query AllocationId \
     --output text)
   cmd_check
 
-  aced_cfg_push ec2_id # push EC2 instance Id to ACED config
+  aced_cfg_push ec2_id ec2_eip_id # push EC2 instance Id & EIP ID to ACED config
 
   echo -e "\n$green \bAssociating EIP with EC2 instance: $ec2_tag... \n$reset"
   aws ec2 associate-address \
-    --allocation-id $eip_id \
+    --allocation-id $ec2_eip_id \
     --instance-id $ec2_id \
     --output table
   cmd_check
@@ -315,16 +315,35 @@ ec2_rebuild() {
 
   echo -e "\n$green \bAssociating EIP with EC2 instance: $ec2_tag... \n$reset"
   aws ec2 associate-address \
-    --allocation-id $eip_id \
+    --allocation-id $ec2_eip_id \
     --instance-id $ec2_id \
     --output table
   cmd_check
 
+  ip_fetch last               # invoke func: fetch raw localhost IP
+
+  echo -e "$green\n \bEC2: Temporarily Authorizing Ingress Rule (EC2 <= \
+    \b\b\b\blocalhost port 22)... $reset"
+  aws ec2 authorize-security-group-ingress \
+    --group-id $ec2_group_id \
+    --protocol tcp \
+    --port 22 \
+    --cidr $lip_last
+
+  . $aced_app/os_sec.sh       # source OS security related tasks
+  . $aced_app/os_app.sh       # source OS app related tasks
+  . $aced_app/os_misc.sh      # source OS one-off tasks
+
+  ec2_ip=$ec2_ip_last         # doh, pretty leading zeros back to bite me
+  ssh_alias_create            # invoke func: connection alias for EC2 instance
+  known_host_add redo         # add EC2 host fingerprint to known_host
   os_sec                      # invoke func: create user/push key/harden
   os_app                      # invoke func: update/install/config apps
   os_misc                     # invoke func: one-off tasks
-  ec2_reboot                  # invoke func: cross fingers
   cert_get redo               # invoke func: copy web certs/update nginx config
+  os_sec_post                 # invoke func: run commands that needed more time
+  ec2_reboot                  # invoke func: cross fingers
+  echo -e "$blue \b$aced_nm Rebuild Successful $reset"
 }
 
 ec2_start(){

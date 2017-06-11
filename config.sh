@@ -4,7 +4,7 @@
 ##  filename:   config.sh                          ##
 ##  path:       ~/src/deploy/cloud/aws/            ##
 ##  purpose:    default ACED settings              ##
-##  date:       06/09/2017                         ##
+##  date:       06/11/2017                         ##
 ##  repo:       https://github.com/DevOpsEtc/aced  ##
 ##  clone path: ~/aced/app/                        ##
 #####################################################
@@ -54,7 +54,8 @@ iam_user="Aced_User"                   # IAM username
 ec2_ami_owner="099720109477"           # AMI owner: Canonical (Ubuntu)
 ec2_ami_name="xenial"                  # AMI owner: Ubuntu server code name
 ec2_ami_ver="16.04"                    # AMI owner: current Ubuntu LTS
-ec2_id="i-004ee719f4586617c"           # EC2 instance ID
+ec2_eip_id="eipalloc-39486303"         # EC2 EIP allocation ID
+ec2_id="i-02f9b02cfa8af393d"           # EC2 instance ID
 ec2_tag="$aced_nm_title"               # EC2 instance tag
 ec2_ip="052.008.069.047"               # EIP public IP address
 ec2_group="Aced_Sec_Group"             # EC2 security group name

@@ -4,7 +4,7 @@
 ##  filename:   misc.sh                            ##
 ##  path:       ~/src/deploy/cloud/aws/            ##
 ##  purpose:    misc ACED helper tasks             ##
-##  date:       06/10/2017                         ##
+##  date:       06/11/2017                         ##
 ##  repo:       https://github.com/DevOpsEtc/aced  ##
 ##  clone path: ~/aced/app/                        ##
 #####################################################
@@ -68,10 +68,10 @@ cert_get() {
   ###################################################
   ####  Request/revoke/restore web certificates  ####
   ###################################################
-  [[ $1 == "rebuild" ]] && os_cert_issued=false
+  [[ $1 == "redo" ]] && os_cert_issued=false
 
   if [ "$os_cert_issued" == true ]; then
-    echo -e "\n$green \bCertbot: fetching certificate info... "
+    echo -e "$green \bCertbot: fetching certificate info... "
     echo $blue; ssh $ssh_alias "sudo certbot certificates"
     decision_response Revoke web certificates?
     if [[ "$response" =~ [yY] ]]; then
@@ -84,7 +84,12 @@ cert_get() {
       cert_get
     fi
   elif [ "$os_cert_issued" == false ]; then
-    if [ $1 != "rebuild" ]; then
+    if [ $1 == "redo" ]; then
+      echo -e "\n$green \bRemote: restoring your web certificates... $reset\n"
+      rsync -rvl --rsync-path="sudo rsync" $aced_certs/ $ssh_alias:/etc/letsencrypt/
+      cmd_check
+    fi
+    if [ $1 != "redo" ]; then
       echo -e "\n$green \bCertbot: requesting web certificates from \
         \b\b\b\b\b\bLet's Encrypt... "
       echo $blue; ssh $ssh_alias "sudo certbot certonly --webroot \
@@ -92,17 +97,13 @@ cert_get() {
         -w $os_www_dev/public -d $os_fqdn_dev \
         --email $os_user_email --agree-tos --no-eff-email"
       cmd_check
-
-      echo -e "\n$green \bRemote: creating 2048-bit DHE key to secure \
-        \b\b\b\b\b\bcommunication with HTTP server & Let's Encrypt CA..."
-      echo $blue; ssh $ssh_alias " \
-        sudo openssl dhparam -out /etc/ssl/certs/dhparam.pem 2048"
-      cmd_check
-    elif [ $1 == "rebuild" ]; then
-      echo -e "\n$green \bRemote: restoring your web certificates... $reset\n"
-      rsync -rv --rsync-path="sudo rsync" $aced_certs/ $ssh_alias:/etc/letsencrypt/
-      cmd_check
     fi
+
+    echo -e "\n$green \bRemote: creating 2048-bit DHE key to secure \
+      \b\b\b\b\b\bcommunication with HTTP server & Let's Encrypt CA..."
+    echo $blue; ssh $ssh_alias " \
+      sudo openssl dhparam -out /etc/ssl/certs/dhparam.pem 2048"
+    cmd_check
 
     sites=("dev" "live")
 
@@ -111,7 +112,7 @@ cert_get() {
       [[ "$i" == "dev" ]] && fqdn=$os_fqdn_dev
 
       echo -e "\n$green \bRemote: Updating server block with TLS \
-        \b\b\b\b\b\bdirectives for $fqdn..."
+        \b\b\b\b\b\b\b\bdirectives for $fqdn..."
       # e1: kill pre-cert block; ec2: uncomment post-cert block; e3: kill headers
       ssh $ssh_alias " \
         sudo sed -i \
@@ -122,11 +123,12 @@ cert_get() {
       cmd_check
     done
 
-    echo -e "\n$green \bRemote: restarting Nginx service... "
+    echo -e "\n$green \bRemote: checking Nginx config & restarting service... \
+      \n$reset"
     ssh $ssh_alias "sudo nginx -t && sudo service nginx restart"
     cmd_check
 
-    if [ $1 != "rebuild" ]; then
+    if [ $1 != "redo" ]; then
       echo -e "\n$green \bRemote: backing up certs for $aced_nm restores \
         \n\n$blue \b$aced_certs "
       rsync -azhe ssh --rsync-path="sudo rsync" \
@@ -140,7 +142,7 @@ cert_get() {
       && sudo rm -f /etc/cron.d/cerbot"
     cmd_check
 
-    echo -e "\n$green \Remote: creating cron job for certbot renewal... "
+    echo -e "\n$green \bRemote: creating cron job for certbot renewal... "
     str_1='52 0,12 * * * root /usr/bin/certbot renew --renew-hook'
     str_2='"systemctl reload nginx"'
     echo -e "$str_1 $str_2 | /usr/bin/logger -t cert_renew_cron" \
@@ -148,8 +150,9 @@ cert_get() {
 
     aced_cfg_push os_cert_issued
 
-    echo -e "\n$green \bOpening $fqdn... $reset"
-    ec2_eip_fetch silent && open http://www.$fqdn
+    echo -e "\n$green \bOpening www.$os_fqdn_title... $reset"
+    ec2_eip_fetch silent && open https://www.$fqdn
+    cmd_check
   fi
 } # end func: cert_get
 
@@ -200,13 +203,17 @@ ip_fetch() {
 }
 
 known_host_add() {
+  port=22
   if [ "$1" == "update" ]; then
     port=$os_ssh_port
-    echo -e "$green \bLocalhost: removing prior EIP from known_hosts... "
+    echo -e "\n$green \bLocalhost: removing prior EIP from known_hosts... \
+      $reset\n"
     echo $blue; ssh-keygen -R [$ec2_ip_last]:$port
     cmd_check
-  else
-    port=22
+  elif [ "$1" == "redo" ]; then
+    echo -e "\n$green \bLocalhost: removing prior EIP from known_hosts... \
+      $reset\n"
+    ssh-keygen -R $ec2_ip_last
   fi
 
   echo -e "\n$green \bRemote: waiting on SSH port to accept connections... "
@@ -214,7 +221,7 @@ known_host_add() {
   activity_show
 
   # prevents host key verification notice; you initiated it, so legit
-  echo -e "\n$green \bLocalhost: forcing EC2 host (EIP) => known_hosts... "
+  echo -e "$green \bLocalhost: forcing EC2 host (EIP) => known_hosts... "
   ssh -n -o StrictHostKeyChecking=no $ssh_alias "exit" &>/dev/null
   cmd_check
 }

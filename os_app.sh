@@ -4,7 +4,7 @@
 ##  filename:   os_app.sh                          ##
 ##  path:       ~/src/deploy/cloud/aws/            ##
 ##  purpose:    install and config apps            ##
-##  date:       05/07/2017                         ##
+##  date:       06/11/2017                         ##
 ##  repo:       https://github.com/DevOpsEtc/aced  ##
 ##  clone path: ~/aced/app/                        ##
 #####################################################
@@ -21,20 +21,10 @@ os_apt_update() {
   echo -e "\n$green \bRemote: adding PPA, updating app list & upgrading \
     \b\b\b\b\b native apps/dependencies... "
   echo $blue; ssh $ssh_alias " \
-    sudo DEBIAN_FRONTEND=noninteractive apt -qy install grub-pc \
-    && sudo DEBIAN_FRONTEND=noninteractive add-apt-repository -y\
+    sudo DEBIAN_FRONTEND=noninteractive add-apt-repository -y \
       ppa:certbot/certbot \
-    && sudo DEBIAN_FRONTEND=noninteractive apt -qy \
-      -o DPkg::options::=\"--force-confdef\" \
-      -o DPkg::options::=\"--force-confold\" \
-    update  \
-      --allow-downgrades \
-      --allow-remove-essential \
-      --allow-change-held-packages \
-    && sudo DEBIAN_FRONTEND=noninteractive apt -qy \
-      -o DPkg::options::=\"--force-confdef\" \
-      -o DPkg::options::=\"--force-confold\" \
-    dist-upgrade \
+    && sudo DEBIAN_FRONTEND=noninteractive apt-get update -qy \
+    && sudo DEBIAN_FRONTEND=noninteractive apt-get dist-upgrade -qy \
       --allow-downgrades \
       --allow-remove-essential \
       --allow-change-held-packages"
@@ -55,7 +45,7 @@ os_apt_install() {
   for i in "${install_pkg[@]}"; do
     echo -e "\n$green \bRemote: installing app: $i... "
     echo $blue; ssh $ssh_alias " \
-      sudo DEBIAN_FRONTEND=noninteractive apt -qq install $i"
+      sudo DEBIAN_FRONTEND=noninteractive apt-get install -qy $i"
     cmd_check
   done
 } # end func: os_apt_install
@@ -65,23 +55,24 @@ os_nginx_config() {
 
   echo -e "\n$green \bRemote: backing up & editing Nginx config... "
   ssh $ssh_alias " \
-    sudo cp -f /etc/nginx/{nginx.conf,conf.d/$os_fqdn.conf} \
+    sudo cp -f /etc/nginx/{nginx.conf,nginx.conf.old} \
     && sudo sed -i \
       -e '/server_tokens /s/.*# /\t/' \
       -e '/server_names_hash/ s/.*# /\t/' \
       -e '/server_names_hash/ s/64/128/' \
       -e '/#mail/,/#\}/d' \
-      /etc/nginx/conf.d/$os_fqdn.conf"
+      /etc/nginx/nginx.conf"
   cmd_check
 
   # bug workaround: https://bugs.launchpad.net/ubuntu/+source/nginx/+bug/1581864
-  echo -e "\n$green \bRemote: pushing override config... "
-  ssh $ssh_alias "\
+  echo -e "\n$green \bRemote: pushing systemd override config for nginx... "
+  ssh $ssh_alias " \
     sudo mkdir /etc/systemd/system/nginx.service.d \
-    printf "[Service]\nExecStartPost=/bin/sleep 0.1\n" \
-      | sudo tee /etc/systemd/system/nginx.service.d/override.conf
-    sudo systemctl daemon-reload
-    sudo systemctl restart nginx"
+    && printf "[Service]\nExecStartPost=/bin/sleep 0.1\n" \
+      | sudo tee /etc/systemd/system/nginx.service.d/override.conf > /dev/null \
+    && sudo systemctl daemon-reload \
+    && sudo systemctl restart nginx"
+  cmd_check
 
   echo -e "\n$green \bRemote: disabling default server block & removing \
     \b\b\b\bdefault document root... "
@@ -172,7 +163,7 @@ os_nginx_config() {
   done
 
   echo -e "\n$green \bRemote: checking Nginx config/server block syntax & \
-    \b\b\b\brestarting service... "
+    \b\b\b\brestarting service... $reset \n"
   ssh $ssh_alias "sudo nginx -t && sudo service nginx restart"
   cmd_check
 
@@ -181,13 +172,7 @@ os_nginx_config() {
     \n/var/log/nginx/error.log"
 
   echo -e "\n$yellow \bAccess your new websites at: \n$blue \
-    \nLive:\t$os_fqdn_title \
-    \nAlias:\twww.$os_fqdn_title \n \
-    \nDev:\t$os_fqdn_dev_title \
-    \nAlias:\twww.$os_fqdn_dev_title"
-
-  echo -e "\n$green \bOpening live website... $reset"
-  ec2_eip_fetch silent && open http://$ec2_ip_last
+    \nLive:\twww.$os_fqdn_title\nDev:\t$os_fqdn_dev_title"
 } # end func: os_nginx_config
 
 os_fail2ban_config() {

@@ -4,7 +4,7 @@
 ##  filename:   os_sec.sh                          ##
 ##  path:       ~/src/deploy/cloud/aws/            ##
 ##  purpose:    server security hardening          ##
-##  date:       06/09/2017                         ##
+##  date:       06/11/2017                         ##
 ##  repo:       https://github.com/DevOpsEtc/aced  ##
 ##  clone path: ~/aced/app/                        ##
 #####################################################
@@ -100,18 +100,11 @@ os_ip_tables() {
 
   echo -e "\n$green \bRemote: pushing IPTables rules => \
     \b\b\b\b\b /etc/iptables/rules.v4... "
-  echo $blue; cat ./build/rules.v4 \
-    | sed
+  echo $blue; cat ./build/rules.v4 | sed \
       -e '/^######/,/^######/d' \
       -e '/*filter/,$!d' \
       -e "s/ssh_port/$os_ssh_port/g" \
     | ssh $ssh_alias "sudo tee /etc/iptables/rules.v4"
-  cmd_check
-
-  # ssh -n backgrounds remote command and gives prompt back to script
-  echo -e "\n$green \bRemote: restoring IPTables rules... "
-  echo $blue; ssh -n $ssh_alias " \
-    sudo iptables-restore < /etc/iptables/rules.v4"
   cmd_check
 }
 
@@ -127,9 +120,17 @@ os_hard_misc() {
       -e '/order/ s/hosts,bind/bind,hosts/' \
       -e 's/multi on/nospoof on/' \
     /etc/host.conf"
+  cmd_check
 
   # password & ssh login; unlock: sudo usermod -e -1 $os_user_def
-  echo -e "\n$green \bRemote: locking default account: $os_user_def... "
-  echo $blue; ssh $ssh_alias "sudo usermod -e 1 $os_user_def"; echo $reset
+  echo -e "\n$green \bRemote: locking default user account: $os_user_def... "
+  ssh $ssh_alias "sudo usermod -e 1 $os_user_def"
+  cmd_check
+}
+
+os_sec_post() {
+  # iptables needed few more minutes before interface is fully up
+  echo -e "\n$green \bRemote: restoring IPTables rules... "
+  ssh $ssh_alias "sudo iptables-restore < /etc/iptables/rules.v4"
   cmd_check
 }
