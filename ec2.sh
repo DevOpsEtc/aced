@@ -337,12 +337,6 @@ ec2_start(){
   activity_show
   cmd_check
 
-  ec2_eip_create rotate     # allocate & associate new EIP
-  ec2_eip_fetch last        # fetch old and new EIP address
-  ssh_alias_create update   # update ssh connection alias with new IP
-  known_host_add update     # update EC2 host in known_host
-  aced_cfg_push ec2_ip      # push updated IP to config
-
   [[ "$1" == "menu" ]] \
     && read -n 1 -s -p "$yellow""Press any key to continue "; clear
 }
@@ -353,19 +347,16 @@ ec2_stop() {
 
   notify eip_gist
   decision_response Continue stopping $aced_nm?
+  [[ "$response" =~ [nN] ]] && return
 
-  if [[ "$response" =~ [yY] ]]; then
-    ec2_eip_remove  # invoke func: disassociate & release EIP
+  echo -e "$green\nStopping $aced_nm... \n$blue"
+  aws ec2 stop-instances --instance-ids "$ec2_id"
+  aws ec2 wait instance-stopped --instance-ids "$ec2_id" &
+  activity_show
+  cmd_check
 
-    echo -e "$green\nStopping $aced_nm... \n$blue"
-    aws ec2 stop-instances --instance-ids "$ec2_id"
-    aws ec2 wait instance-stopped --instance-ids "$ec2_id" &
-    activity_show
-    cmd_check
-
-    [[ "$1" == "menu" ]] \
-      && read -n 1 -s -p "$yellow""Press any key to continue "; clear
-  fi
+  [[ "$1" == "menu" ]] \
+    && read -n 1 -s -p "$yellow""Press any key to continue "; clear
 }
 
 ec2_terminate() {
@@ -378,30 +369,4 @@ ec2_terminate() {
   aws ec2 wait instance-terminated --instance-ids "$1" &
   activity_show
   cmd_check
-}
-
-ec2_key_fp_check() {
-  # console log takes too long to populate for use during EC2 launch
-  # console log only holds last 64k of data
-  # check EC2 public key fingerprint; match to localhost's fingerprint
-  echo -e "\n$white \b*** EC2 Public Key Fingerprint Check ***"
-
-  echo -e "\n$green \bFetching localhost public key fingerprint..."
-  key_fp=$(ssh-keygen -l -E md5 -f $aced_keys/$ssh_key_public \
-  | awk '{gsub("MD5:",""); print $2}')
-  cmd_check
-
-  echo -e "\n$green \bFetching EC2 public key fingerprint..."
-  ec2_key_fp=$(aws ec2 get-console-output \
-    --instance-id $ec2_id \
-    --output text \
-    | grep -o "$key_fp")
-  cmd_check
-
-  if [ "$key_fp" == "$ec2_key_fp" ]; then
-    echo -e "\n$yellow \bPublic key fingerprints match! $reset"
-  else
-    echo -e "\n$red \bPublic fingerprints don't match! $reset"
-    exit 1
-  fi
 }
