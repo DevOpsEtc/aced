@@ -294,6 +294,9 @@ ec2_rebuild() {
   ###################################################################
   ####  Rebuild ACED: new EC2 instance, old EIP & old web certs  ####
   ###################################################################
+  notify eip_gist
+  decision_response Continue rebuilding $aced_nm?
+  [[ "$response" =~ [nN] ]] && return
   ec2_eip_fetch silent
 
   echo -e "\n$green \bFetching ACED's EIP association ID..."

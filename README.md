@@ -14,11 +14,14 @@ AWS Cloud Easy Deploy (ACED) is an Amazon Web Services (AWS) EC2 instance genera
 To read more, see my blog post at [www.DevOpsEtc.com](https://www.DevOpsEtc.com/post/aced-aws-cloud-easy-deploy/)
 
 **Road Map:**
-- Install MTA (fail2ban notifications)
 - Rotate AWS IAM access_keys
 - Rotate EC2 public/private key
+- Refactor uninstall
+- Install MTA (fail2ban notifications)
 - Add IP6Tables rules
 - Implement port knocking
 - Install openVPN
+- S3 Bucket for images
+- create custom Debian ami
 
 **PRs welcome, or just fork it (YMMV!)**

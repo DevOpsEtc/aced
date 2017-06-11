@@ -4,7 +4,7 @@
 ##  filename:   misc.sh                            ##
 ##  path:       ~/src/deploy/cloud/aws/            ##
 ##  purpose:    misc ACED helper tasks             ##
-##  date:       06/09/2017                         ##
+##  date:       06/10/2017                         ##
 ##  repo:       https://github.com/DevOpsEtc/aced  ##
 ##  clone path: ~/aced/app/                        ##
 #####################################################
@@ -224,9 +224,10 @@ notify() {
     echo -e "\n$red \b*** Running multiple EC2 instances will exceed \
       \b\b\b\b\b\bfree-tier limit: 750 hours/month *** $reset"
   elif [[ "$1" == "eip_gist" ]]; then
-    echo -e "\n$yellow \b*** Instance EIP will be disassociated & released, \
-      \b\b\b\b\b\band a new one will be allocated & associated. YOU'LL need \
-      \b\b\b\b\b\to update your domain's DNS host records! *** $reset"
+    echo -e "\n$yellow \bInstance EIP will be disassociated, but not \
+    \b\b\b\breleased. Depending upon how long the EIP remains \
+    \b\b\b\bdisassociated you may see a charge on your AWS invoice for \
+    \b\b\b\b\$0.005/per hour. Starting ACED will reassociate the EIP. $reset"
   elif [[ "$1" == "eip" ]]; then
     ec2_eip_fetch silent
     echo -e "\n$yellow \b**** $os_fqdn not reachable until after YOU update \

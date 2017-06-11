@@ -23,15 +23,18 @@ os_misc() {
   ssh $ssh_alias "sudo ln -s /var/log/ ~/logs"
   cmd_check
 
+  echo -e "\n$green \bRemote: downloading bashrc from DevOpsEtc's Dotfiles \
+  \b\b\b\brepo... \n$blue"
+  file='DevOpsEtc/dotfiles/master/bash/bashrc.min.sh'
+  ssh $ssh_alias " \
+  mv .bashrc .bashrc_old \
+  && curl -s https://raw.githubusercontent.com/$file -o .bashrc"
+  cmd_check
+
   echo -e "\n$green \bRemote: downloading vimrc from DevOpsEtc's Dotfiles \
     \b\b\b\brepo... \n$blue"
   file='DevOpsEtc/dotfiles/master/vim/vimrc_min.vim'
-  ssh $ssh_alias "curl -so https://raw.githubusercontent.com/$file ~/.vimrc \
-    && ls -l .vimrc"
+  ssh $ssh_alias "curl -s https://raw.githubusercontent.com/$file -o .vimrc"
+  cmd_check
 
-  echo -e "\n$green \bRemote: downloading bashrc from DevOpsEtc's Dotfiles \
-    \b\b\b\brepo... \n$blue"
-  file='DevOpsEtc/dotfiles/master/bash/bashrc_min.sh'
-  ssh $ssh_alias "curl -so https://raw.githubusercontent.com/$file ~/.bashrc \
-    && ls -l .bashrc"
 }
