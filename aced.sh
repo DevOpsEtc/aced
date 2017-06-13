@@ -4,7 +4,7 @@
 ##  filename:   aced.sh                                    ##
 ##  path:       ~/src/deploy/cloud/aws/                    ##
 ##  purpose:    run ACED: Automated EC2 Deploy             ##
-##  date:       06/11/2017                                 ##
+##  date:       06/12/2017                                 ##
 ##  symlink:    $ ln -s ~/src/deploy/cloud/aws ~/aced/app  ##
 ##  repo:       https://github.com/DevOpsEtc/aced          ##
 ##  clone path: ~/aced/app/                                ##
@@ -172,7 +172,7 @@ main() {
     sleep 2
     echo -e "\n$white \b****  $aced_nm: Install  ****"
     echo -e "\n$green \bCreating file structure... "
-    mkdir -p $aced_root/{config/{backups/{aws,ssh},certificates,keys},src/blog}
+    mkdir -p $aced_root/{config/{backups/{aws,certs,ssh},keys}}
     cmd_check   # invoke func: check last command status code
     iam         # invoke func: check/install IAM group/user/policy
     ec2_sec     # invoke func: check/install EC2 key pair/group/rules

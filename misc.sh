@@ -4,7 +4,7 @@
 ##  filename:   misc.sh                            ##
 ##  path:       ~/src/deploy/cloud/aws/            ##
 ##  purpose:    misc ACED helper tasks             ##
-##  date:       06/11/2017                         ##
+##  date:       06/12/2017                         ##
 ##  repo:       https://github.com/DevOpsEtc/aced  ##
 ##  clone path: ~/aced/app/                        ##
 #####################################################
@@ -15,6 +15,9 @@ aced_cfg_push() {
     echo -e "\n$green \bPushing $blue \b$i: ${!i}$green => ACED config..."
     if [ $i == "aced_ok" ] || [ $i == "os_cert_issued" ]; then
       sed -i '' "/$i/ s/false/true /" $aced_app/config.sh
+      if [ "$os_cert_issued" == true ]; then
+        sed -i '' "/$i/ s/true/false/" $aced_app/config.sh
+      fi
       cmd_check
       break
     elif [ $i == "ec2_ip" ] || [ $i == "localhost_ip" ]; then
@@ -78,20 +81,37 @@ cert_get() {
       echo -e "\n$green \bCertbot: revoking web certificates... "
       echo $blue; ssh $ssh_alias " \
         sudo certbot revoke \
-          --cert-path /etc/letsencrypt/live/$os_fqdn/cert.pem \
-        && sudo certbot delete --cert-name $os_fqdn"
-      os_cert_issued=false
-      cert_get
+          --cert-path /etc/letsencrypt/live/$os_fqdn/fullchain.pem \
+          --key-path /etc/letsencrypt/live/$os_fqdn/privkey.pem \
+          && sudo rm -rf /etc/letsencrypt"
+      cmd_check
+      if find $aced_certs -mindepth 1 | read; then
+        echo -e "\n$green \bBacking up web certs to: \
+          \n\n$blue \b$aced_backups/certs/certs_"$(date +%m-%d-%Y_%H-%M)"... "
+        mv $aced_certs $aced_backups/certs/certs_$(date +%m-%d-%Y_%H-%M)
+        cmd_check
+      fi
+
+      echo -e "\n$green \bChecking for & removing custom certbot cron job..."
+      ssh $ssh_alias " \
+        [[ -f /etc/cron.d/cert_renew ]] && sudo rm -f /etc/cron.d/cert_renew"
+      cmd_check
+
+      aced_cfg_push os_cert_issued
+
+      decision_response Request new web certificates?
+      if [[ "$response" =~ [yY] ]]; then
+        cert_get
+      fi
     fi
-  elif [ "$os_cert_issued" == false ]; then
-    if [ $1 == "redo" ]; then
+  else
+    if [ "$1" == "redo" ]; then
       echo -e "\n$green \bRemote: restoring your web certificates... $reset\n"
       rsync -rvl --rsync-path="sudo rsync" $aced_certs/ $ssh_alias:/etc/letsencrypt/
       cmd_check
-    fi
-    if [ $1 != "redo" ]; then
+    else
       echo -e "\n$green \bCertbot: requesting web certificates from \
-        \b\b\b\b\b\bLet's Encrypt... "
+        \b\b\b\b\b\b\b\bLet's Encrypt... "
       echo $blue; ssh $ssh_alias "sudo certbot certonly --webroot \
         -w $os_www_live/public -d $os_fqdn,www.$os_fqdn \
         -w $os_www_dev/public -d $os_fqdn_dev \
@@ -128,9 +148,10 @@ cert_get() {
     ssh $ssh_alias "sudo nginx -t && sudo service nginx restart"
     cmd_check
 
-    if [ $1 != "redo" ]; then
+    if [ "$1" != "redo" ]; then
       echo -e "\n$green \bRemote: backing up certs for $aced_nm restores \
         \n\n$blue \b$aced_certs "
+      [[ -d $aced_certs ]] || mkdir $aced_certs
       rsync -azhe ssh --rsync-path="sudo rsync" \
         $ssh_alias:/etc/letsencrypt/{archive,live,renewal} $aced_certs
       cmd_check
@@ -151,7 +172,7 @@ cert_get() {
     aced_cfg_push os_cert_issued
 
     echo -e "\n$green \bOpening www.$os_fqdn_title... $reset"
-    ec2_eip_fetch silent && open https://www.$fqdn
+    open https://www.$fqdn
     cmd_check
   fi
 } # end func: cert_get

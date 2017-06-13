@@ -4,7 +4,7 @@
 ##  filename:   ec2_sec.sh                         ##
 ##  path:       ~/src/deploy/cloud/aws/            ##
 ##  purpose:    EC2 security tasks                 ##
-##  date:       05/06/2017                         ##
+##  date:       06/12/2017                         ##
 ##  repo:       https://github.com/DevOpsEtc/aced  ##
 ##  clone path: ~/aced/app/                        ##
 #####################################################
@@ -277,41 +277,14 @@ ec2_rule_revoke() {
       --cidr $lip_last
     cmd_check
   elif [ "$1" == "all" ]; then
-    echo -e "\n$green \bFetching default security group ID..."
-    group_id_def=$(aws ec2 describe-security-groups \
-      --filters 'Name=group-name,Values=default' \
-      --query 'SecurityGroups[*].GroupId' \
-      --output text)
+    echo -e "\n$green \bRevoking default outbound \"All\" rule on group: \
+      \b\b\b\b\b\b$ec2_group"
+    aws ec2 revoke-security-group-egress \
+      --group-id $ec2_group_id \
+      --ip-permissions "$(aws ec2 describe-security-groups \
+      --group-ids $ec2_group_id \
+      --query SecurityGroups[].IpPermissionsEgress[])"
     cmd_check
-
-    echo -e "\n$green \bRevoking default inbound \"All\" rule on group ID: \
-      \n\n$blue \b$group_id_def (EC2 <= localhost)"
-    aws ec2 revoke-security-group-ingress \
-      --group-id $group_id_def \
-      --protocol -1 \
-      --port all \
-      --cidr 0.0.0.0/0
-    cmd_check
-
-    echo -e "\n$green \bFetching all EC2 security group IDs..."
-    sec_groups=($(aws ec2 describe-security-groups \
-      --query 'SecurityGroups[*].GroupId' \
-      --output text)
-    )
-    cmd_check
-
-    if [ "${#sec_groups[@]}" -gt 0 ]; then
-      for i in "${sec_groups[@]}"; do
-        echo -e "\n$green \bRevoking default outbound \"All\" rule on group \
-        \b\b\b\b\b\b\b\bID: \n\n$blue \b$i (EC2 <= localhost)"
-        aws ec2 revoke-security-group-egress \
-          --group-id $i \
-          --protocol -1 \
-          --port all \
-          --cidr 0.0.0.0/0
-        cmd_check
-      done
-    fi
   fi
 } # end func: ec2_rule_revoke
 

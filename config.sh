@@ -4,7 +4,7 @@
 ##  filename:   config.sh                          ##
 ##  path:       ~/src/deploy/cloud/aws/            ##
 ##  purpose:    default ACED settings              ##
-##  date:       06/11/2017                         ##
+##  date:       06/12/2017                         ##
 ##  repo:       https://github.com/DevOpsEtc/aced  ##
 ##  clone path: ~/aced/app/                        ##
 #####################################################
@@ -14,7 +14,7 @@ aced_nm="ACED"                         # ACED name: upper-case
 aced_nm_title="Aced"                   # ACED name: title-case
 aced_nm_low="aced"                     # ACED name: lower-case
 aced_ver="0.1.0"                       # ACED version number
-aced_rel="04/24/2017"                  # ACED release date
+aced_rel="06/13/2017"                  # ACED release date
 aced_ok=true                           # ACED install status
 
 # Localhost File Paths
@@ -22,7 +22,6 @@ aced_root="$HOME/aced"                 # ACED root
 aced_app="$aced_root/app"              # ACED app path
 aced_build="$aced_app/build"           # HTTP content/config path
 aced_src="$aced_root/src"              # ACED data path
-aced_blog="$aced_src/blog"             # ACED repo root path
 aced_config="$aced_root/config"        # ACED config path
 aced_keys="$aced_config/keys"          # ACED key pair path
 aced_certs="$aced_config/certificates" # domain name certificate path
@@ -54,12 +53,12 @@ iam_user="Aced_User"                   # IAM username
 ec2_ami_owner="099720109477"           # AMI owner: Canonical (Ubuntu)
 ec2_ami_name="xenial"                  # AMI owner: Ubuntu server code name
 ec2_ami_ver="16.04"                    # AMI owner: current Ubuntu LTS
-ec2_eip_id="eipalloc-39486303"         # EC2 EIP allocation ID
-ec2_id="i-02f9b02cfa8af393d"           # EC2 instance ID
+ec2_eip_id="eipalloc-71c0c94b"         # EC2 EIP allocation ID
+ec2_id="i-036dbb918de1cd10e"           # EC2 instance ID
 ec2_tag="$aced_nm_title"               # EC2 instance tag
-ec2_ip="052.008.069.047"               # EIP public IP address
+ec2_ip="013.056.104.175"               # EIP public IP address
 ec2_group="Aced_Sec_Group"             # EC2 security group name
-ec2_group_id="sg-8faee5e8"             # EC2 security group ID
+ec2_group_id="sg-44e5ea23"             # EC2 security group ID
 ec2_group_desc="ACED Security Group"   # EC2 security group description
 
 # EC2 OS
@@ -71,7 +70,6 @@ os_fqdn="devopsetc.com"                # domain name
 os_fqdn_title="DevOpsEtc.com"          # domain name in title-case
 os_fqdn_dev="dev.$os_fqdn"             # staging subdomain
 os_fqdn_dev_title="Dev.$os_fqdn_title" # staging subdomain in title-case
-os_src_blog="\$HOME/src/blog"          # root blog repo path
 os_www_live="/var/www/$os_fqdn/live"   # root site directory (production)
 os_www_dev="/var/www/$os_fqdn/dev"     # root site directory (development)
 os_nginx_user="www-data"               # user who runs nginx & owns /var/www
