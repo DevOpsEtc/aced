@@ -15,7 +15,7 @@ aced_nm_title="Aced"                   # ACED name: title-case
 aced_nm_low="aced"                     # ACED name: lower-case
 aced_ver="0.1.0"                       # ACED version number
 aced_rel="06/13/2017"                  # ACED release date
-aced_ok=true                           # ACED install status
+aced_ok=false                          # ACED install status
 
 # Localhost File Paths
 aced_root="$HOME/aced"                 # ACED root
@@ -33,13 +33,13 @@ ssh_config="$HOME/.ssh"                # SSH default config path
 ssh_key_private="aced_key"             # key pair: private
 ssh_key_public="aced_key.pub"          # key pair: pubic (imported to AWS)
 ssh_alias="$aced_nm_low"               # ACED SSH connection alias
-localhost_ip="067.190.100.157/32"      # localhost public IP/32-bit netmask/pad
+localhost_ip="000.000.000.000/32"      # localhost public IP/32-bit netmask/pad
 down1="$HOME/Desktop"                  # search path: downloaded EC2 keys
 down2="$HOME/Downloads"                # 2nd search path: downloaded EC2 keys
 root_keys="rootkey.csv"                # root access keys
 
 # AWS Resources
-ec2_vpc_id="vpc-b68048d2"              # AWS virtual private cloud ID
+ec2_vpc_id="vpc-b60008d2"              # AWS virtual private cloud ID
 aws_output="json"                      # aws-cli default command output
 aws_region="us-west-1"                 # aws-cli default region
 aws_retry=16                           # aws-cli default retries before 255
@@ -54,17 +54,17 @@ ec2_ami_owner="099720109477"           # AMI owner: Canonical (Ubuntu)
 ec2_ami_name="xenial"                  # AMI owner: Ubuntu server code name
 ec2_ami_ver="16.04"                    # AMI owner: current Ubuntu LTS
 ec2_eip_id="eipalloc-71c0c94b"         # EC2 EIP allocation ID
-ec2_id="i-036dbb918de1cd10e"           # EC2 instance ID
+ec2_id="i-036dbb008de1cd10e"           # EC2 instance ID
 ec2_tag="$aced_nm_title"               # EC2 instance tag
-ec2_ip="013.056.104.175"               # EIP public IP address
+ec2_ip="000.000.000.000"               # EIP public IP address
 ec2_group="Aced_Sec_Group"             # EC2 security group name
-ec2_group_id="sg-44e5ea23"             # EC2 security group ID
+ec2_group_id="sg-00e5ea23"             # EC2 security group ID
 ec2_group_desc="ACED Security Group"   # EC2 security group description
 
 # EC2 OS
 os_user_def="ubuntu"                   # default Ubuntu cloud-init username
 os_user="ace"                          # custom username
-os_ssh_port="5280"                     # SSH listen port; only for cleaner logs
+os_ssh_port="2222"                     # SSH listen port; only for cleaner logs
 os_hostname="DevOpsEtc"                # hostname; seen in ssh prompt
 os_fqdn="devopsetc.com"                # domain name
 os_fqdn_title="DevOpsEtc.com"          # domain name in title-case
@@ -74,8 +74,8 @@ os_www_live="/var/www/$os_fqdn/live"   # root site directory (production)
 os_www_dev="/var/www/$os_fqdn/dev"     # root site directory (development)
 os_nginx_user="www-data"               # user who runs nginx & owns /var/www
 os_nginx_user_dev="$os_user"           # user who has access to dev subdomain
-os_user_email="Greg@$os_fqdn"          # used for cerbot EFF contact & fail2ban
-os_cert_issued=true                    # certbot web certificate was issued
+os_user_email="You@$os_fqdn"           # used for cerbot EFF contact & fail2ban
+os_cert_issued=false                   # certbot web certificate was issued
 
 # Misc
 icon_pass="✔"                          # command return status: 0
