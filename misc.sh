@@ -4,7 +4,7 @@
 ##  filename:   misc.sh                            ##
 ##  path:       ~/src/deploy/cloud/aws/            ##
 ##  purpose:    misc ACED helper tasks             ##
-##  date:       06/12/2017                         ##
+##  date:       09/10/2017                         ##
 ##  repo:       https://github.com/DevOpsEtc/aced  ##
 ##  clone path: ~/aced/app/                        ##
 #####################################################
@@ -164,7 +164,7 @@ cert_get() {
     cmd_check
 
     echo -e "\n$green \bRemote: creating cron job for certbot renewal... "
-    str_1='52 0,12 * * * root /usr/bin/certbot renew --renew-hook'
+    str_1='52 0,12 * * * root /usr/bin/certbot renew --deploy-hook'
     str_2='"systemctl reload nginx"'
     echo -e "$str_1 $str_2 | /usr/bin/logger -t cert_renew_cron" \
       | ssh $ssh_alias "sudo tee /etc/cron.d/cert_renew &>/dev/null"
