@@ -80,7 +80,6 @@ Code walkthrough and additional information can be found at:  [DevOpsEtc.com/pos
     * Iptables-persistent: persist loading of IPTables rules
   * Cron job to automate check/renewal of TLS certificate
 
-
 **What Gets Provisioned: Local**
   * Known host entry added for EC2's EIP address: ~/.ssh/known_hosts
   * SSH config entry added for EC2's EIP address: ~/.ssh/ssh_config
@@ -186,11 +185,10 @@ Code walkthrough and additional information can be found at:  [DevOpsEtc.com/pos
     4. Check on DNS propagation: [viewdns.info](http://viewdns.info/propagation)
     5. If NameCheap is your domain registrar see this [tutorial](https://www.namecheap.com/support/knowledgebase/article.aspx/434/2237/how-do-i-set-up-host-records-for-a-domain)
   2. Run SSL/TLS certificate request and Nginx config update:
-
-
-
+```
       # request new/revoke old web certificates
       $ aced --tls
+```
 
 **Getting Started:**
 <p align="center"> <img src="image/output1.png"></p>
@@ -202,7 +200,7 @@ Code walkthrough and additional information can be found at:  [DevOpsEtc.com/pos
 <p align="center"> <img src="image/output3.png"></p>
 
 **Other Useful Admin Commands:**  
-  
+
     # View entire syslog without IPTables dropped connections
     $ ssh aced "sudo cat /var/log/syslog | grep -v IPT_DROP"
 
