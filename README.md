@@ -12,13 +12,13 @@ Code walkthrough and additional information can be found at:  [DevOpsEtc.com/pos
   * Automatic disassociation/disassociation of EIP address during EC2 instance rebuild/stop/start
   * Automatic reuse of web certificate for rebuilds
   * IP address checker/automatic EC2 rule updater for new SSH connections
-  * Non-Destructive installer prompts before removing anything
+  * Non-destructive installer prompts before removing anything
   * Canned CLI monitoring and admin tools for quicker tasks
   * CLI-based to save you from having to use AWS web console
-  * Free for 1st year (if qualify for AWS free-tier)
+  * Free for 1st year (if you qualify for AWS free-tier)
 
 **Prerequisites:**
-  * MacOS or Linux with some tweaking, i.e. some bash commands are not fully POSIX compliant, so YMMV
+  * MacOS or Linux with some tweaking, i.e. some bash commands are not fully POSIX compliant
   * Register for free AWS account:
     * Read [AWS Free Tier Details](https://aws.amazon.com/free)
     * Create an [AWS Account](https://console.aws.amazon.com/console/home)
@@ -80,6 +80,7 @@ Code walkthrough and additional information can be found at:  [DevOpsEtc.com/pos
     * Iptables-persistent: persist loading of IPTables rules
   * Cron job to automate check/renewal of TLS certificate
 
+
 **What Gets Provisioned: Local**
   * Known host entry added for EC2's EIP address: ~/.ssh/known_hosts
   * SSH config entry added for EC2's EIP address: ~/.ssh/ssh_config
@@ -88,7 +89,7 @@ Code walkthrough and additional information can be found at:  [DevOpsEtc.com/pos
   * EC2 public/private key pair created at ~/aced/config/keys
   * Copy of remote host's TLS certificates downloaded to ~/aced/config/certs
   * SSH Agent entry added for private key passphrase
-  * Post-install directory tree structure:
+  * Post-install directory structure:
 
         $ tree ~/aced
 
@@ -148,6 +149,7 @@ Code walkthrough and additional information can be found at:  [DevOpsEtc.com/pos
         14 directories, 37 files
 
 **Installation:**
+
     # Clone the ACED repo on GitHub
     $ git clone https://github.com/DevOpsEtc/aced ~/aced/app
 
@@ -172,6 +174,7 @@ Code walkthrough and additional information can be found at:  [DevOpsEtc.com/pos
     # Complete both post-install steps
 
 **Post-Installation:**
+
   1. Update your DNS host records (website not reachable by domain name until you do this):
     1. Fetch your instance's public EIP address: $ aced --eip
     2. Go to your domain registrar
@@ -183,6 +186,7 @@ Code walkthrough and additional information can be found at:  [DevOpsEtc.com/pos
     4. Check on DNS propagation: [viewdns.info](http://viewdns.info/propagation)
     5. If NameCheap is your domain registrar see this [tutorial](https://www.namecheap.com/support/knowledgebase/article.aspx/434/2237/how-do-i-set-up-host-records-for-a-domain)
   2. Run SSL/TLS certificate request and Nginx config update:
+
 
 
       # request new/revoke old web certificates
@@ -197,7 +201,8 @@ Code walkthrough and additional information can be found at:  [DevOpsEtc.com/pos
 **ACED Admin Task Menu:**    
 <p align="center"> <img src="image/output3.png"></p>
 
-**Other Useful Admin Commands:**    
+**Other Useful Admin Commands:**  
+  
     # View entire syslog without IPTables dropped connections
     $ ssh aced "sudo cat /var/log/syslog | grep -v IPT_DROP"
 
